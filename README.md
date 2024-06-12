@@ -3,13 +3,13 @@ A Universal Framework for Knowledge-Augmented Language Model (KALM) Applications
 
 ## Example
 ```python
-from kalm.lm import LUKE
-from kalm.el.blink import BLINK
+from kalm.lm.luke import LUKE
+from kalm.el.refined import ReFinED
 
 doc = "What year did Michael Jordan win his first NBA championship?"
 
-blink_model = BLINK.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>")
-doc = blink_model(doc)
+el_model = ReFinED.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>")
+doc = el_model(doc)
 >> Doc(
   text="What year did Michael Jordan win his first NBA championship?",
   spans=[
