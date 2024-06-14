@@ -1,15 +1,15 @@
 # KALM - Knowledge-Augmented Language Model
 A Universal Framework for Knowledge-Augmented Language Model (KALM) Applications
 
-## Example
+## Inference
 ```python
-from kalm.lm import LUKE
-from kalm.el.blink import BLINK
+from kalm.lm.luke import LUKE
+from kalm.el.refined import ReFinED
 
 doc = "What year did Michael Jordan win his first NBA championship?"
 
-blink_model = BLINK.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>")
-doc = blink_model(doc)
+el_model = ReFinED.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>")
+doc = el_model(doc)
 >> Doc(
   text="What year did Michael Jordan win his first NBA championship?",
   spans=[
@@ -29,4 +29,18 @@ doc = blink_model(doc)
 
 lm_model = LUKE.from_pretrained(model_path="<PATH_TO_MODEL>")
 sentence_emb = lm_model(doc)
+```
+
+## Training
+```python
+from kalm.el.refined import ReFinED
+from kalm.dataset import EntityLinkingDataset
+
+train_set = EntityLinkingDataset("<PATH_TO_DATASET>")
+dev_set = EntityLinkingDataset("<PATH_TO_DATASET>")
+
+el_model = ReFinED.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>")
+el_model.train(train_set=train_set, dev_set=dev_set)
+
+el_model.save_pretrained("<PATH_TO_SAVE>")
 ```
