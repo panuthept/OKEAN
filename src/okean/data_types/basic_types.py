@@ -1,26 +1,17 @@
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
+from okean.data_types.baseclass import BaseDataType
 
 
 @dataclass
-class Baseclass:
-    def from_dict(self, dict_data: Dict[str, Any]) -> "Baseclass":
-        for key, value in dict_data.items():
-            setattr(self, key, value)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return self.__dict__
-
-
-@dataclass
-class Entity(Baseclass):
+class Entity(BaseDataType):
     identifier: str
     confident: float
     metadata: Optional[Dict[str, Any]] = None
 
 
 @dataclass
-class Span(Baseclass):
+class Span(BaseDataType):
     start: int
     end: int
     surface_form: str
@@ -28,6 +19,6 @@ class Span(Baseclass):
 
 
 @dataclass
-class Doc(Baseclass):
+class Doc(BaseDataType):
     text: str
     entities: Optional[List[Span]] = None
