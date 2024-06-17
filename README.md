@@ -25,10 +25,12 @@ relevant_docs = keir_model(doc)
       end=28,
       surface_form="Michael Jordan",
       entity=Entity(
-        id="Q41421",
-        name="Michael Jeffrey Jordan",
-        desc="American basketball player and businessman (born 1963)",
+        identifier="Q41421",
         confident=1.0,
+        metadata={
+          "name": "Michael Jeffrey Jordan", 
+          "desc": "American basketball player and businessman (born 1963)"
+        }
       )
     ),
     Span(
@@ -36,10 +38,12 @@ relevant_docs = keir_model(doc)
       end=46,
       surface_form="NBA",
       entity=Entity(
-        id="Q155223",
-        name="National Basketball Association",
-        desc="North American professional men's basketball league",
+        identifier="Q155223",
         confident=1.0,
+        metadata={
+          "name": "National Basketball Association", 
+          "desc": "North American professional men's basketball league"
+        }
       )
     )
   ]
