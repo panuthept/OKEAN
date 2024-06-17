@@ -7,10 +7,9 @@ import ujson as json
 from nltk import PunktSentenceTokenizer
 from transformers import AutoTokenizer, AutoModel, AutoConfig, PreTrainedTokenizer, PreTrainedModel
 
-from refined.resource_management.resource_manager import ResourceManager, get_mmap_shape
-from refined.resource_management.aws import S3Manager
-from refined.resource_management.lmdb_wrapper import LmdbImmutableDict
-from refined.resource_management.loaders import load_human_qcode
+from okean.modules.entity_linking.refined_package.resource_management.resource_manager import get_mmap_shape
+from okean.modules.entity_linking.refined_package.resource_management.lmdb_wrapper import LmdbImmutableDict
+from okean.modules.entity_linking.refined_package.resource_management.loaders import load_human_qcode
 import os
 
 
@@ -18,23 +17,25 @@ class LookupsInferenceOnly:
 
     def __init__(
             self, 
-            entity_set: str, 
             data_dir: str, 
             use_precomputed_description_embeddings: bool = True,
-            return_titles: bool = False,
             transformer_name: str = "roberta_base_model"
     ):
-        self.entity_set = entity_set
         self.data_dir = data_dir
         self.use_precomputed_description_embeddings = use_precomputed_description_embeddings
-        resource_manager = ResourceManager(entity_set=entity_set,
-                                           data_dir=data_dir,
-                                           model_name=None,
-                                           s3_manager=S3Manager(),
-                                           load_descriptions_tns=not use_precomputed_description_embeddings,
-                                           load_qcode_to_title=return_titles
-                                           )
-        resource_to_file_path = resource_manager.get_data_files()
+
+        resource_to_file_path = {
+            "qcode_idx_to_class_idx": os.path.join(data_dir, "wikipedia_data", "qcode_to_class_tns_6269457-138.np"),
+            "descriptions_tns": os.path.join(data_dir, "wikipedia_data", "descriptions_tns.pt"),
+            "wiki_pem": os.path.join(data_dir, "wikipedia_data", "pem.lmdb"),
+            "class_to_label": os.path.join(data_dir, "wikipedia_data", "class_to_label.json"),
+            "human_qcodes": os.path.join(data_dir, "wikipedia_data", "human_qcodes.json"),
+            "subclasses": os.path.join(data_dir, "wikipedia_data", "subclasses.lmdb"),
+            "qcode_to_idx": os.path.join(data_dir, "wikipedia_data", "qcode_to_idx.lmdb"),
+            "class_to_idx": os.path.join(data_dir, "wikipedia_data", "class_to_idx.json"),
+            "nltk_sentence_splitter_english": os.path.join(data_dir, "wikipedia_data", "nltk_sentence_splitter_english.pickle"),
+            "roberta_base_model": os.path.join(data_dir, "roberta-base", "pytorch_model.bin"),
+        }
         self.resource_to_file_path = resource_to_file_path
 
         # replace all get_file and download_if needed
@@ -74,10 +75,7 @@ class LookupsInferenceOnly:
         self.max_num_classes_per_ent = self.qcode_idx_to_class_idx.shape[1]
         self.num_classes = len(self.class_to_idx)
 
-        if return_titles:
-            self.qcode_to_wiki: Mapping[str, str] = LmdbImmutableDict(resource_to_file_path["qcode_to_wiki"])
-        else:
-            self.qcode_to_wiki = None
+        self.qcode_to_wiki = None
 
         with open(resource_to_file_path["nltk_sentence_splitter_english"], 'rb') as f:
             self.nltk_sentence_splitter_english: PunktSentenceTokenizer = pickle.load(f)

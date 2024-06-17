@@ -6,14 +6,13 @@ import numpy as np
 import torch
 from transformers import PreTrainedTokenizer, PretrainedConfig, PreTrainedModel
 
-from refined.doc_preprocessing.candidate_generator import CandidateGenerator, CandidateGeneratorExactMatch
-from refined.doc_preprocessing.class_handler import ClassHandler
-from refined.resource_management.data_lookups import LookupsInferenceOnly
-from refined.data_types.base_types import Token, Span
-from refined.resource_management.resource_manager import ResourceManager, get_mmap_shape
-from refined.model_components.config import ModelConfig
-from refined.resource_management.aws import S3Manager
-from refined.utilities.general_utils import get_logger
+from okean.modules.entity_linking.refined_package.doc_preprocessing.candidate_generator import CandidateGenerator, CandidateGeneratorExactMatch
+from okean.modules.entity_linking.refined_package.doc_preprocessing.class_handler import ClassHandler
+from okean.modules.entity_linking.refined_package.resource_management.data_lookups import LookupsInferenceOnly
+from okean.modules.entity_linking.refined_package.data_types.base_types import Token, Span
+from okean.modules.entity_linking.refined_package.resource_management.resource_manager import get_mmap_shape
+from okean.modules.entity_linking.refined_package.model_components.config import ModelConfig
+from okean.modules.entity_linking.refined_package.utilities.general_utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -120,15 +119,11 @@ class PreprocessorInferenceOnly(Preprocessor):
     def __init__(
             self,
             transformer_name: str,
-            entity_set: str,
             max_candidates: int,
             ner_tag_to_ix: Dict[str, int],
             data_dir: str,
-            debug: bool = False,
             use_precomputed_description_embeddings: bool = True,
             model_description_embeddings_file: Optional[str] = None,
-            inference_only: bool = True,
-            return_titles: bool = False,
             max_seq: int = 510
     ):
         """
@@ -148,18 +143,12 @@ class PreprocessorInferenceOnly(Preprocessor):
         )
         self.max_seq = max_seq
         self.use_precomputed_description_embeddings = use_precomputed_description_embeddings
-        self.debug = debug
         self.transformer_name = transformer_name
-        self.entity_set = entity_set
-        self.inference_only = inference_only
-        self.return_titles = return_titles
         self.max_candidates = max_candidates
 
         self.lookups = LookupsInferenceOnly(
             data_dir=data_dir,
-            entity_set=entity_set,
             use_precomputed_description_embeddings=use_precomputed_description_embeddings,
-            return_titles=return_titles,
             transformer_name=transformer_name,
         )
         self.tokenizer = self.lookups.tokenizers
@@ -314,39 +303,19 @@ class PreprocessorInferenceOnly(Preprocessor):
     def from_model_config_file(
             cls,
             filename: str,
-            entity_set: str,
             data_dir: str,
-            debug: bool = False,
-            download_files: bool = False,
-            inference_only: bool = True,
             use_precomputed_description_embeddings: bool = True,
             model_description_embeddings_file: Optional[str] = None,
-            return_titles: bool = False,
             max_candidates: Optional[int] = None
     ):
-
-        if download_files:
-            resource_manager = ResourceManager(s3_manager=S3Manager(),
-                                               data_dir=data_dir,
-                                               entity_set=entity_set,
-                                               inference_ony=inference_only,
-                                               load_qcode_to_title=return_titles,
-                                               load_descriptions_tns=not use_precomputed_description_embeddings,
-                                               model_name=None)
-            resource_manager.download_data_if_needed()
-
         config = ModelConfig.from_file(filename, data_dir=data_dir)
-        config.debug = debug
         return cls(
             data_dir=config.data_dir,
-            entity_set=entity_set,
             transformer_name=config.transformer_name,
             max_candidates=max_candidates or config.max_candidates,
-            debug=config.debug,
             use_precomputed_description_embeddings=use_precomputed_description_embeddings,
             model_description_embeddings_file=model_description_embeddings_file,
             ner_tag_to_ix=config.ner_tag_to_ix,
-            return_titles=return_titles,
         )
 
     def class_check_spans(self, spans_to_check: List[Span]):

@@ -31,6 +31,7 @@ class ReFinED(BaseEntityLinking):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else torch.device(device)
         self.preprocessor = PreprocessorInferenceOnly.from_model_config_file(
             filename=config.model_config_file_path,
+            data_dir=entity_corpus_path,
             use_precomputed_description_embeddings=config.use_precomputed_descriptions,
             model_description_embeddings_file=config.precomputed_descriptions_emb_file_path,
             max_candidates=config.max_candidates,
