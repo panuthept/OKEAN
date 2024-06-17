@@ -1,8 +1,8 @@
 from typing import Optional, Set, Mapping
 
-from refined.resource_management.lmdb_wrapper import LmdbImmutableDict
-from refined.resource_management.loaders import load_disambiguation_qcodes
-from refined.resource_management.resource_manager import ResourceManager
+from okean.modules.entity_linking.refined_package.resource_management.lmdb_wrapper import LmdbImmutableDict
+from okean.modules.entity_linking.refined_package.resource_management.loaders import load_disambiguation_qcodes
+from okean.modules.entity_linking.refined_package.resource_management.resource_manager import ResourceManager
 
 
 class WikidataMapper:

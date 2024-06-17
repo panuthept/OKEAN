@@ -2,7 +2,7 @@ from typing import FrozenSet, List, Tuple
 
 import torch
 
-from refined.data_types.base_types import Span
+from okean.modules.entity_linking.refined_package.data_types.base_types import Span
 
 
 class ClassHandler:

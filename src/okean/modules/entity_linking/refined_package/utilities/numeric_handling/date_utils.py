@@ -5,7 +5,7 @@ import copy
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 
-from refined.data_types.base_types import Entity, Span
+from okean.modules.entity_linking.refined_package.data_types.base_types import Entity, Span
 
 
 @dataclass

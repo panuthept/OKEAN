@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from torch import Tensor, nn
 from transformers import PreTrainedModel
 
-from refined.doc_preprocessing.preprocessor import Preprocessor
+from okean.modules.entity_linking.refined_package.doc_preprocessing.preprocessor import Preprocessor
 
 
 class DescriptionEncoder(nn.Module):

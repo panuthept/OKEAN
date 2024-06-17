@@ -4,8 +4,8 @@ from typing import Optional, NamedTuple, List, NoReturn, Dict
 import torch
 from torch import Tensor
 
-from refined.data_types.base_types import Span
-from refined.utilities.general_utils import get_logger, merge_spans, sort_spans
+from okean.modules.entity_linking.refined_package.data_types.base_types import Span
+from okean.modules.entity_linking.refined_package.utilities.general_utils import get_logger, merge_spans, sort_spans
 
 LOG = get_logger(__name__)
 

@@ -9,7 +9,7 @@ from transformers import (
     PreTrainedTokenizerFast,
 )
 
-from refined.data_types.base_types import Span
+from okean.modules.entity_linking.refined_package.data_types.base_types import Span
 
 
 def split_interval(start: int, end: int, num_splits: int = 1) -> List[List[int]]:

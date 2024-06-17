@@ -66,5 +66,4 @@ class ReFinED(BaseEntityLinking):
     
 
 if __name__ == "__main__":
-    model = ReFinED.from_pretrained(model_path="./data/aida_refined")
-        
+    el_model = ReFinED.from_pretrained(model_path="./data/aida_refined", entity_corpus_path="/Users/panuthep/.cache/refined")

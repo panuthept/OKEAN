@@ -8,7 +8,7 @@ import lmdb
 import ujson as json
 from tqdm import tqdm
 
-from refined.utilities.general_utils import batch_items
+from okean.modules.entity_linking.refined_package.utilities.general_utils import batch_items
 
 K = TypeVar('K')
 V = TypeVar('V')

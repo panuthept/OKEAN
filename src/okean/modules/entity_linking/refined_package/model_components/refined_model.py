@@ -9,18 +9,18 @@ from torch import Tensor, nn
 from transformers import PreTrainedModel
 from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
 
-from refined.utilities.md_dataset_utils import bio_to_offset_pairs
-from refined.data_types.modelling_types import BatchElement, BatchedElementsTns, ModelReturn
-from refined.data_types.base_types import Span
-from refined.doc_preprocessing.preprocessor import Preprocessor
-from refined.utilities.preprocessing_utils import pad
-from refined.model_components.config import ModelConfig
-from refined.model_components.ed_layer_2 import EDLayer
-from refined.model_components.entity_disambiguation_layer import EntityDisambiguation
-from refined.model_components.entity_typing_layer import EntityTyping
-from refined.model_components.mention_detection_layer import MentionDetection
-from refined.utilities.model_utils import fill_tensor
-from refined.utilities.general_utils import get_logger
+from okean.modules.entity_linking.refined_package.utilities.md_dataset_utils import bio_to_offset_pairs
+from okean.modules.entity_linking.refined_package.data_types.modelling_types import BatchElement, BatchedElementsTns, ModelReturn
+from okean.modules.entity_linking.refined_package.data_types.base_types import Span
+from okean.modules.entity_linking.refined_package.doc_preprocessing.preprocessor import Preprocessor
+from okean.modules.entity_linking.refined_package.utilities.preprocessing_utils import pad
+from okean.modules.entity_linking.refined_package.model_components.config import ModelConfig
+from okean.modules.entity_linking.refined_package.model_components.ed_layer_2 import EDLayer
+from okean.modules.entity_linking.refined_package.model_components.entity_disambiguation_layer import EntityDisambiguation
+from okean.modules.entity_linking.refined_package.model_components.entity_typing_layer import EntityTyping
+from okean.modules.entity_linking.refined_package.model_components.mention_detection_layer import MentionDetection
+from okean.modules.entity_linking.refined_package.utilities.model_utils import fill_tensor
+from okean.modules.entity_linking.refined_package.utilities.general_utils import get_logger
 
 LOG = get_logger(__name__)
 

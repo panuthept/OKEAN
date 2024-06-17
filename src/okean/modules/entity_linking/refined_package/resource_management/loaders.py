@@ -9,7 +9,7 @@ import ujson
 from tqdm.auto import tqdm
 from unidecode import unidecode
 
-from refined.utilities.general_utils import get_logger
+from okean.modules.entity_linking.refined_package.utilities.general_utils import get_logger
 
 LOG = get_logger(__name__)
 

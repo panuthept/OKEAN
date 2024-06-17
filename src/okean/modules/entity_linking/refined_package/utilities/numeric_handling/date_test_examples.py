@@ -1,5 +1,5 @@
 
-from refined.utilities.numeric_handling.date_utils import Date
+from okean.modules.entity_linking.refined_package.utilities.numeric_handling.date_utils import Date
 
 
 TEST_DATE_MENTIONS = {

@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 from random import sample
 from typing import Tuple, List, Any, Mapping, Set, Dict, Optional
 
-from refined.data_types.base_types import Span
-from refined.utilities.general_utils import unique
-from refined.resource_management.loaders import normalize_surface_form
+from okean.modules.entity_linking.refined_package.data_types.base_types import Span
+from okean.modules.entity_linking.refined_package.utilities.general_utils import unique
+from okean.modules.entity_linking.refined_package.resource_management.loaders import normalize_surface_form
 
 
 class CandidateGenerator(ABC):

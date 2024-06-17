@@ -5,13 +5,13 @@ import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
 
-from refined.data_types.doc_types import (
+from okean.modules.entity_linking.refined_package.data_types.doc_types import (
     Doc,
 )
-from refined.data_types.modelling_types import BatchElementTns, BatchedElementsTns, BatchElement
-from refined.doc_preprocessing.preprocessor import Preprocessor
-from refined.model_components.mention_detection_layer import IGNORE_INDEX
-from refined.utilities.general_utils import batch_items
+from okean.modules.entity_linking.refined_package.data_types.modelling_types import BatchElementTns, BatchedElementsTns, BatchElement
+from okean.modules.entity_linking.refined_package.doc_preprocessing.preprocessor import Preprocessor
+from okean.modules.entity_linking.refined_package.model_components.mention_detection_layer import IGNORE_INDEX
+from okean.modules.entity_linking.refined_package.utilities.general_utils import batch_items
 
 LOG = logging.getLogger()
 

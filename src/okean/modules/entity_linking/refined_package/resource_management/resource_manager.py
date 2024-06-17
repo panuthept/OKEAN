@@ -2,9 +2,9 @@ import os
 from copy import deepcopy
 from typing import Dict, Tuple, Optional
 
-from refined.constants.resources_constants import DATA_FILES_WIKIDATA, DATA_FILES_WIKIPEDIA, DATASET_DATA_FILES, \
+from okean.modules.entity_linking.refined_package.constants.resources_constants import DATA_FILES_WIKIDATA, DATA_FILES_WIKIPEDIA, DATASET_DATA_FILES, \
     ADDITIONAL_DATA_FILES, model_name_to_files, TRAINING_DATA_FILES
-from refined.resource_management.aws import S3Manager
+from okean.modules.entity_linking.refined_package.resource_management.aws import S3Manager
 
 
 def get_mmap_shape(file_path: str) -> Tuple[int, int]:

@@ -3,10 +3,10 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from refined.data_types.base_types import Token, Span
-from refined.data_types.modelling_types import BatchElementToken, BatchElement
-from refined.doc_preprocessing.preprocessor import Preprocessor
-from refined.utilities.general_utils import batch_items, get_logger, merge_spans
+from okean.modules.entity_linking.refined_package.data_types.base_types import Token, Span
+from okean.modules.entity_linking.refined_package.data_types.modelling_types import BatchElementToken, BatchElement
+from okean.modules.entity_linking.refined_package.doc_preprocessing.preprocessor import Preprocessor
+from okean.modules.entity_linking.refined_package.utilities.general_utils import batch_items, get_logger, merge_spans
 
 LOG = get_logger(__name__)
 

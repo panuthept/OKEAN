@@ -1,8 +1,8 @@
 import random
 from typing import List
 
-from refined.utilities.md_dataset_utils import bio_to_offset_pairs
-from refined.data_types.modelling_types import BatchElementToken, BatchElement
+from okean.modules.entity_linking.refined_package.utilities.md_dataset_utils import bio_to_offset_pairs
+from okean.modules.entity_linking.refined_package.data_types.modelling_types import BatchElementToken, BatchElement
 
 
 def mask_mentions(

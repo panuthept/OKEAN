@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 
-from refined.utilities.general_utils import get_tokenizer
+from okean.modules.entity_linking.refined_package.utilities.general_utils import get_tokenizer
 
 NER_TAG_TO_IX = {
     "O": 0,

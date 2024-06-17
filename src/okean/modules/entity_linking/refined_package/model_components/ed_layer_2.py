@@ -4,8 +4,8 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 
-from refined.doc_preprocessing.preprocessor import Preprocessor
-from refined.model_components.description_encoder import DescriptionEncoder
+from okean.modules.entity_linking.refined_package.doc_preprocessing.preprocessor import Preprocessor
+from okean.modules.entity_linking.refined_package.model_components.description_encoder import DescriptionEncoder
 
 
 class EDLayer(nn.Module):
