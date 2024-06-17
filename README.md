@@ -3,9 +3,9 @@
 ## Knowledge-Enhanced Information Retrieval (KEIR)
 ```python
 from okean.pipelines.keir import KEIR
-from okean.modules.information_retrieval.dpr import DPR
-from okean.modules.entity_linking.refined import ReFinED
 from okean.preprocessing.transformation import EntityDisambiguation
+from okean.modules.information_retrieval.dpr_package.dpr import DPR
+from okean.modules.entity_linking.refined_package.refined import ReFinED
 
 doc = "What year did Michael Jordan win his first NBA championship?"
 
@@ -55,9 +55,9 @@ relevant_docs = keir_model(doc)
 
 ## Training Toolkit
 ```python
-from okean.modules.entity_linking.refined import ReFinED
 from okean.datasets.entity_linking import EntityLinkingDataset
-from okean.toolkits.training.entity_linking.refined import ReFinEDTrainer
+from okean.trainers.entity_linking.refined import ReFinEDTrainer
+from okean.modules.entity_linking.refined_package.refined import ReFinED
 
 train_set = EntityLinkingDataset("<PATH_TO_DATASET>")
 dev_set = EntityLinkingDataset("<PATH_TO_DATASET>")
@@ -71,9 +71,9 @@ el_trainer.save_pretrained("<PATH_TO_SAVE>")
 
 ## Evaluation Toolkit
 ```python
-from okean.modules.entity_linking.refined import ReFinED
 from okean.datasets.entity_linking import EntityLinkingDataset
-from okean.toolkits.evaluation.entity_linking import EntityLinkingBenchmark
+from okean.benchmarks.entity_linking import EntityLinkingBenchmark
+from okean.modules.entity_linking.refined_package.refined import ReFinED
 
 train_set = EntityLinkingDataset("<PATH_TO_DATASET>") 
 test_sets = {
