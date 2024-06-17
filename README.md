@@ -1,18 +1,25 @@
-# KALM - Knowledge-Augmented Language Model
-A Universal Framework for Knowledge-Augmented Language Model (KALM) Applications
+# OKEAN - Opensource Knowledge-Enhanced Applications in NLP
 
-## Inference
+## Knowledge-Enhanced Information Retrieval (KEIR)
 ```python
-from kalm.lm.luke import LUKE
-from kalm.el.refined import ReFinED
+from okean.pipelines.keir import KEIR
+from okean.modules.information_retrieval.dpr import DPR
+from okean.modules.entity_linking.refined import ReFinED
+from okean.preprocessing.transformation import EntityDisambiguation
 
 doc = "What year did Michael Jordan win his first NBA championship?"
 
-el_model = ReFinED.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>")
-doc = el_model(doc)
+keir_model = KEIR(
+  el_model=ReFinED.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>"),
+  ir_model=DPR.from_pretrained(model_path="<PATH_TO_MODEL>"),
+  doc_transformer=EntityDisambiguation()
+)
+
+relevant_docs = keir_model(doc)
+>> doc = el_model(doc)
 >> Doc(
   text="What year did Michael Jordan win his first NBA championship?",
-  spans=[
+  entities=[
     Span(
       start=14,
       end=28,
@@ -23,24 +30,87 @@ doc = el_model(doc)
         desc="American basketball player and businessman (born 1963)",
         confident=1.0,
       )
+    ),
+    Span(
+      start=43,
+      end=46,
+      surface_form="NBA",
+      entity=Entity(
+        id="Q155223",
+        name="National Basketball Association",
+        desc="North American professional men's basketball league",
+        confident=1.0,
+      )
     )
   ]
 )
-
-lm_model = LUKE.from_pretrained(model_path="<PATH_TO_MODEL>")
-sentence_emb = lm_model(doc)
+>> transformed_doc = doc_transformer(doc)
+>> Doc(text="What year did Michael Jordan (Michael Jeffrey Jordan) win his first NBA (National Basketball Association) championship?")
+>> relevant_docs = ir_model(transformed_doc)
 ```
 
-## Training
+## Training Toolkit
 ```python
-from kalm.el.refined import ReFinED
-from kalm.dataset import EntityLinkingDataset
+from okean.modules.entity_linking.refined import ReFinED
+from okean.datasets.entity_linking import EntityLinkingDataset
+from okean.toolkits.training.entity_linking.refined import ReFinEDTrainer
 
 train_set = EntityLinkingDataset("<PATH_TO_DATASET>")
 dev_set = EntityLinkingDataset("<PATH_TO_DATASET>")
 
 el_model = ReFinED.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>")
-el_model.train(train_set=train_set, dev_set=dev_set)
+el_trainer = ReFinEDTrainer(el_model)
+el_trainer.train(train_set=train_set, dev_set=dev_set)
 
-el_model.save_pretrained("<PATH_TO_SAVE>")
+el_trainer.save_pretrained("<PATH_TO_SAVE>")
+```
+
+## Evaluation Toolkit
+```python
+from okean.modules.entity_linking.refined import ReFinED
+from okean.datasets.entity_linking import EntityLinkingDataset
+from okean.toolkits.evaluation.entity_linking import EntityLinkingBenchmark
+
+train_set = EntityLinkingDataset("<PATH_TO_DATASET>") 
+test_sets = {
+  "AIDA": EntityLinkingDataset("<PATH_TO_DATASET>"),
+  "Tweeki": EntityLinkingDataset("<PATH_TO_DATASET>"),
+  "Mintaka": EntityLinkingDataset("<PATH_TO_DATASET>"),
+}
+
+el_model = ReFinED.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>")
+el_benchmark = EntityLinkingBenchmark(
+  metrics=["precision", "recall", "f1"],
+  entity_corpus_path="<PATH_TO_CORPUS>",
+  train_entity_prior=train_set.statistics("entity_prior"),
+  report_overshadowing=True,
+  report_runtime=True,
+  inkb_only=True,
+  verbose=True,
+)
+
+results = el_benchmark(el_model, test_sets)
+>> {
+  "AIDA": {
+    "precision": {"shadow": 0.6, "top": 0.9, "all": 0.7},
+    "recall": {"shadow": 0.6, "top": 0.9, "all": 0.7},
+    "f1": {"shadow": 0.6, "top": 0.9, "all": 0.7},
+    "shadow_prop": 0.1,
+    "runtime": 0.5,
+  },
+  "Tweeki": {
+    "precision": {"shadow": 0.6, "top": 0.9, "all": 0.7},
+    "recall": {"shadow": 0.6, "top": 0.9, "all": 0.7},
+    "f1": {"shadow": 0.6, "top": 0.9, "all": 0.7},
+    "shadow_prop": 0.2,
+    "runtime": 0.6,
+  },
+  "Mintaka": {
+    "precision": {"shadow": 0.6, "top": 0.9, "all": 0.7},
+    "recall": {"shadow": 0.6, "top": 0.9, "all": 0.7},
+    "f1": {"shadow": 0.6, "top": 0.9, "all": 0.7},
+    "shadow_prop": 0.3,
+    "runtime": 0.7,
+  }
+}
 ```
