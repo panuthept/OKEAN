@@ -1,4 +1,4 @@
-# OKEAN - Opensource Knowledge-Enhanced Applications in NLP
+# OKEAN - Open Knowledge Enhancement for Advanced NLP
 
 ## Knowledge-Enhanced Information Retrieval (KEIR)
 ```python
