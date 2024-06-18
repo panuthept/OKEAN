@@ -12,7 +12,7 @@ setup(
     license='Apache-2.0 License',
     author='Panuthep Tasawong',
     author_email='panuthep.t_s20@vistec.ac.th',
-    description='Open Knowledge Enhancement for Advanced NLP',
+    description='Open Knowledge Enhancement Applications in NLP',
     python_requires='>=3.11',
     # install_requires=dependencies
 )
