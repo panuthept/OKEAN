@@ -1,56 +1,44 @@
 # OKEAN - Open Knowledge Enhancement Applications in NLP
 
+## Knowledge Graph Question Answering (KGQA)
+#### [Knowledge-Augmented Language Model Prompting for Zero-Shot Knowledge Graph Question Answering (Baek et al., NLRSE 2023)](https://aclanthology.org/2023.nlrse-1.7)
+
+```python
+from okean.pipelines.kaping import KAPING
+from okean.modules.generative_llms.t5 import T5
+from okean.knowledge_base.wikidata import WikidataKG
+from okean.modules.entity_linking.refined import ReFinED
+from okean.modules.information_retrieval.mpnet import MPNet
+
+text = "Which member of Black Eyed Peas appeared in Poseidon?"
+
+kaping_model = KAPING(
+  el_model=ReFinED.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>"),
+  ranking_model=MPNet.from_pretrained(model_path="<PATH_TO_MODEL>"),
+  llm_model=T5.from_pretrained(model_path="<PATH_TO_MODEL>"),
+  kg=WikidataKG("<PATH_TO_KG>")
+)
+
+answer = kaping_model(text)
+>> Fergie
+```
+
 ## Knowledge-Enhanced Information Retrieval (KEIR)
 ```python
 from okean.pipelines.keir import KEIR
 from okean.modules.information_retrieval.dpr import DPR
 from okean.modules.entity_linking.refined import ReFinED
-from okean.preprocessing.transformation import EntityDisambiguation
+from okean.preprocessing.doc_transformation import EntityDisambiguation
 
-doc = "What year did Michael Jordan win his first NBA championship?"
+text = "What year did Michael Jordan win his first NBA championship?"
 
 keir_model = KEIR(
   el_model=ReFinED.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>"),
-  ir_model=DPR.from_pretrained(model_path="<PATH_TO_MODEL>"),
+  ir_model=DPR.from_pretrained(model_path="<PATH_TO_MODEL>", document_corpus_path="<PATH_TO_CORPUS>"),
   doc_transformer=EntityDisambiguation()
 )
 
-relevant_docs = keir_model(doc)
->> doc = el_model(doc)
->> Doc(
-  text="What year did Michael Jordan win his first NBA championship?",
-  entities=[
-    Span(
-      start=14,
-      end=28,
-      surface_form="Michael Jordan",
-      entity=Entity(
-        identifier="Q41421",
-        confident=1.0,
-        metadata={
-          "name": "Michael Jeffrey Jordan", 
-          "desc": "American basketball player and businessman (born 1963)"
-        }
-      )
-    ),
-    Span(
-      start=43,
-      end=46,
-      surface_form="NBA",
-      entity=Entity(
-        identifier="Q155223",
-        confident=1.0,
-        metadata={
-          "name": "National Basketball Association", 
-          "desc": "North American professional men's basketball league"
-        }
-      )
-    )
-  ]
-)
->> transformed_doc = doc_transformer(doc)
->> Doc(text="What year did Michael Jordan (Michael Jeffrey Jordan) win his first NBA (National Basketball Association) championship?")
->> relevant_docs = ir_model(transformed_doc)
+relevant_docs = keir_model(text)
 ```
 
 ## Training Toolkit
