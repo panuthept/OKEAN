@@ -132,6 +132,6 @@ if __name__ == "__main__":
     for doc in docs:
         print(doc.text)
         for span in doc.entities:
-            print(f"\t{span.surface_form}")
-            print(f"\t{span.entity}")
+            span.candidates = None
+            print(f"\t{span}")
         print("-" * 100)
