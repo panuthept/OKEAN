@@ -49,38 +49,30 @@ class ReFinED(BaseEntityLinking):
         )
         self.entity_corpus = read_entity_corpus(entity_corpus_path)
 
-    def __call__(self, docs: List[Doc]|Doc) -> List[Doc]|Doc:
-        if isinstance(docs, list):
-            _docs: List[_Doc] = self.refined.process_text_batch(
-                texts=[d.text for d in docs],
-                spanss=[[_Span(text=span.surface_form, start=span.start, ln=span.end - span.start) for span in d.entities] for d in docs] if docs[0].entities is not None else None,
-            )
-            for _doc, doc in zip(_docs, docs):
-                doc.entities = [
-                    Span(
-                        start=_span.start, 
-                        end=_span.start + _span.ln,
-                        surface_form=_span.text,
-                        entity=Entity(
-                            identifier=_span.top_k_predicted_entities[0][0].wikidata_entity_id if _span.top_k_predicted_entities[0][0].wikidata_entity_id is not None else "Q0",
-                            confident=_span.top_k_predicted_entities[0][1],
-                            metadata=self.entity_corpus.get(_span.top_k_predicted_entities[0][0].wikidata_entity_id, None),
-                        ),
-                        candidates=[
-                            Entity(
-                                identifier=_entity.wikidata_entity_id if _entity.wikidata_entity_id is not None else "Q0",
-                                confident=score,
-                                metadata=self.entity_corpus.get(_entity.wikidata_entity_id, None),
-                            ) for _entity, score in _span.top_k_predicted_entities
-                        ] if _span.top_k_predicted_entities is not None else None
-                    ) for _span in _doc.spans
-                ]
-        else:
-            _spans: List[_Span] = self.refined.process_text(
-                text=docs.text,
-                spans=[_Span(text=span.surface_form, start=span.start, ln=span.end - span.start) for span in docs.entities] if docs.entities is not None else None,
-            )
-            docs.entities = [
+    def __call__(
+            self, 
+            texts: List[str]|str = None, 
+            docs: List[Doc]|Doc = None,
+    ) -> List[Doc]:
+        # Cast `texts` to `docs` if `docs` is not provided
+        if docs is None:
+            assert texts is not None, "Either `text` or `docs` must be provided."
+            if isinstance(texts, list):
+                docs = [Doc(text=t) for t in texts]
+            else:
+                docs = [Doc(text=texts)]
+        # Ensure that `docs` is a list of `Doc` objects
+        if not isinstance(docs, list):
+            docs = [docs]
+
+        _docs: List[_Doc] = self.refined.process_text_batch(
+            texts=[d.text for d in docs],
+            spanss=[[_Span(text=span.surface_form, start=span.start, ln=span.end - span.start) for span in d.entities] for d in docs] if docs[0].entities is not None else None,
+        )
+
+        # Post-process to convert ReFinED object (`_docs`) to standard object (`docs`)
+        for _doc, doc in zip(_docs, docs):
+            doc.entities = [
                 Span(
                     start=_span.start, 
                     end=_span.start + _span.ln,
@@ -97,7 +89,7 @@ class ReFinED(BaseEntityLinking):
                             metadata=self.entity_corpus.get(_entity.wikidata_entity_id, None),
                         ) for _entity, score in _span.top_k_predicted_entities
                     ] if _span.top_k_predicted_entities is not None else None
-                ) for _span in _spans
+                ) for _span in _doc.spans
             ]
         return docs
         
@@ -123,12 +115,12 @@ if __name__ == "__main__":
 
     el_model = ReFinED.from_pretrained(model_path="./data/models/aida_refined", entity_corpus_path="./data/entity_corpus/refined_entity_corpus.jsonl")
 
-    docs = [
-        Doc(text="Michael Jordan published a new paper on machine learning."),
-        Doc(text="Michael Jordan (Michael Irwin Jordan) is a professor at which university?"),
-        Doc(text="What year did Michael Jordan win his first NBA championship?"),
+    texts = [
+        "Michael Jordan published a new paper on machine learning.",
+        "Michael Jordan (Michael Irwin Jordan) is a professor at which university?",
+        "What year did Michael Jordan win his first NBA championship?",
     ]
-    docs = el_model(docs)
+    docs = el_model(texts)
     for doc in docs:
         print(doc.text)
         for span in doc.entities:
