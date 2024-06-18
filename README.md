@@ -1,14 +1,16 @@
 # OKEAN - Open Knowledge Enhancement Applications in NLP
 
 ## Knowledge Graph Question Answering (KGQA)
-#### [Knowledge-Augmented Language Model Prompting for Zero-Shot Knowledge Graph Question Answering (Baek et al., NLRSE 2023)](https://aclanthology.org/2023.nlrse-1.7)
+
+#### KAPING (Knowledge-Augmented language model PromptING) 
+[Knowledge-Augmented Language Model Prompting for Zero-Shot Knowledge Graph Question Answering (Baek et al., NLRSE 2023)](https://aclanthology.org/2023.nlrse-1.7)
 
 ```python
-from okean.pipelines.kaping import KAPING
+from okean.modules.kgqa.kaping import KAPING
+from okean.modules.ranking.mpnet import MPNet
 from okean.modules.generative_llms.t5 import T5
 from okean.knowledge_base.wikidata import WikidataKG
 from okean.modules.entity_linking.refined import ReFinED
-from okean.modules.information_retrieval.mpnet import MPNet
 
 text = "Which member of Black Eyed Peas appeared in Poseidon?"
 
@@ -26,7 +28,7 @@ answer = kaping_model(text)
 ## Knowledge-Enhanced Information Retrieval (KEIR)
 ```python
 from okean.pipelines.keir import KEIR
-from okean.modules.information_retrieval.dpr import DPR
+from okean.modules.retrieval.dpr import DPR
 from okean.modules.entity_linking.refined import ReFinED
 from okean.preprocessing.doc_transformation import EntityDisambiguation
 
