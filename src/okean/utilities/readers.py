@@ -1,0 +1,10 @@
+import json
+
+
+def read_entity_corpus(path: str):
+    entity_corpus = {}
+    with open(path, "r") as f:
+        for line in f:
+            entity = json.loads(line)
+            entity_corpus[entity["id"]] = {"name": entity["name"], "desc": entity["desc"]}
+    return entity_corpus

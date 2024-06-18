@@ -2,10 +2,13 @@ import os
 import torch
 from typing import List, Optional
 from dataclasses import dataclass
-from okean.data_types.basic_types import Doc
 from okean.data_types.baseclass import BaseDataType
+from okean.utilities.readers import read_entity_corpus
+from okean.data_types.basic_types import Doc, Span, Entity
 from okean.modules.entity_linking.baseclass import BaseEntityLinking
-from okean.modules.entity_linking.refined_package.model_components.refined_model import RefinedModel
+from okean.modules.entity_linking.refined_package.inference.processor import Refined
+from okean.modules.entity_linking.refined_package.data_types.doc_types import Doc as _Doc
+from okean.modules.entity_linking.refined_package.data_types.base_types import Span as _Span
 from okean.modules.entity_linking.refined_package.doc_preprocessing.preprocessor import PreprocessorInferenceOnly
 
 
@@ -31,22 +34,72 @@ class ReFinED(BaseEntityLinking):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else torch.device(device)
         self.preprocessor = PreprocessorInferenceOnly.from_model_config_file(
             filename=config.model_config_file_path,
-            data_dir=entity_corpus_path,
+            data_dir="/Users/panuthep/.cache/refined",
             use_precomputed_description_embeddings=config.use_precomputed_descriptions,
             model_description_embeddings_file=config.precomputed_descriptions_emb_file_path,
             max_candidates=config.max_candidates,
         )
-        self.model = RefinedModel.from_pretrained(
-            model_file=config.model_file_path, 
-            model_config_file=config.model_config_file_path,
+        self.refined = Refined(
+            model_file_or_model=config.model_file_path,
+            model_config_file_or_model_config=config.model_config_file_path,
+            data_dir="/Users/panuthep/.cache/refined",
             preprocessor=self.preprocessor,
             use_precomputed_descriptions=config.use_precomputed_descriptions,
+            device=device,
         )
-        self.model.to(self.device)
-        self.model.eval()
+        self.entity_corpus = read_entity_corpus(entity_corpus_path)
 
-    def __call__(self, doc: List[Doc]|Doc):
-        pass
+    def __call__(self, docs: List[Doc]|Doc) -> List[Doc]|Doc:
+        if isinstance(docs, list):
+            _docs: List[_Doc] = self.refined.process_text_batch(
+                texts=[d.text for d in docs],
+                spanss=[[_Span(text=span.surface_form, start=span.start, ln=span.end - span.start) for span in d.entities] for d in docs] if docs[0].entities is not None else None,
+            )
+            for _doc, doc in zip(_docs, docs):
+                doc.entities = [
+                    Span(
+                        start=_span.start, 
+                        end=_span.start + _span.ln,
+                        surface_form=_span.text,
+                        entity=Entity(
+                            identifier=_span.top_k_predicted_entities[0][0].wikidata_entity_id if _span.top_k_predicted_entities[0][0].wikidata_entity_id is not None else "Q0",
+                            confident=_span.top_k_predicted_entities[0][1],
+                            metadata=self.entity_corpus.get(_span.top_k_predicted_entities[0][0].wikidata_entity_id, None),
+                        ),
+                        candidates=[
+                            Entity(
+                                identifier=_entity.wikidata_entity_id if _entity.wikidata_entity_id is not None else "Q0",
+                                confident=score,
+                                metadata=self.entity_corpus.get(_entity.wikidata_entity_id, None),
+                            ) for _entity, score in _span.top_k_predicted_entities
+                        ] if _span.top_k_predicted_entities is not None else None
+                    ) for _span in _doc.spans
+                ]
+        else:
+            _spans: List[_Span] = self.refined.process_text(
+                text=docs.text,
+                spans=[_Span(text=span.surface_form, start=span.start, ln=span.end - span.start) for span in docs.entities] if docs.entities is not None else None,
+            )
+            docs.entities = [
+                Span(
+                    start=_span.start, 
+                    end=_span.start + _span.ln,
+                    surface_form=_span.text,
+                    entity=Entity(
+                        identifier=_span.top_k_predicted_entities[0][0].wikidata_entity_id if _span.top_k_predicted_entities[0][0].wikidata_entity_id is not None else "Q0",
+                        confident=_span.top_k_predicted_entities[0][1],
+                        metadata=self.entity_corpus.get(_span.top_k_predicted_entities[0][0].wikidata_entity_id, None),
+                    ),
+                    candidates=[
+                        Entity(
+                            identifier=_entity.wikidata_entity_id if _entity.wikidata_entity_id is not None else "Q0",
+                            confident=score,
+                            metadata=self.entity_corpus.get(_entity.wikidata_entity_id, None),
+                        ) for _entity, score in _span.top_k_predicted_entities
+                    ] if _span.top_k_predicted_entities is not None else None
+                ) for _span in _spans
+            ]
+        return docs
         
 
     @classmethod
@@ -66,4 +119,19 @@ class ReFinED(BaseEntityLinking):
     
 
 if __name__ == "__main__":
-    el_model = ReFinED.from_pretrained(model_path="./data/aida_refined", entity_corpus_path="/Users/panuthep/.cache/refined")
+    from okean.data_types.basic_types import Doc
+
+    el_model = ReFinED.from_pretrained(model_path="./data/models/aida_refined", entity_corpus_path="./data/entity_corpus/refined_entity_corpus.jsonl")
+
+    docs = [
+        Doc(text="Michael Jordan published a new paper on machine learning."),
+        Doc(text="Michael Jordan (Michael Irwin Jordan) is a professor at which university?"),
+        Doc(text="What year did Michael Jordan win his first NBA championship?"),
+    ]
+    docs = el_model(docs)
+    for doc in docs:
+        print(doc.text)
+        for span in doc.entities:
+            print(f"\t{span.surface_form}")
+            print(f"\t{span.entity}")
+        print("-" * 100)

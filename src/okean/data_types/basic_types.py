@@ -15,7 +15,8 @@ class Span(BaseDataType):
     start: int
     end: int
     surface_form: str
-    entity: Optional[List[Entity] | Entity] = None
+    entity: Optional[Entity] = None
+    candidates: Optional[List[Entity]] = None
 
 
 @dataclass
