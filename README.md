@@ -1,6 +1,31 @@
 # OKEAN - Open Knowledge Enhancement Applications in NLP
 
-## Entity Linking (EL)
+## Basic Components
+
+### Information Retrieval (IR)
+
+```python
+from okean.modules.retrieval.elq import mE5
+
+corpus = [
+  ...
+]
+text = "Which member of Black Eyed Peas appeared in Poseidon?"
+
+ir_model = mE5()
+ir_model.build_corpus(corpus_path="<PATH_TO_CORPUS>", texts=corpus)
+doc = ir_model(text)
+>> Doc(
+  text="Which member of Black Eyed Peas appeared in Poseidon?",
+  relevant_docs=[
+    Doc(text="...", confident=0.9),
+    Doc(text="...", confident=0.8),
+    Doc(text="...", confident=0.7),
+  ]
+)
+```
+
+### Entity Linking (EL)
 
 ```python
 from okean.modules.entity_linking.elq import ELQ
@@ -20,7 +45,7 @@ doc = el_model(text)
 )
 ```
 
-## Entity Disambiguation (ED)
+### Entity Disambiguation (ED)
 ```python
 from okean.modules.entity_linking.elq import ELQ
 from okean.modules.entity_linking.genre import GENRE
