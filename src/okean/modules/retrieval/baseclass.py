@@ -5,7 +5,7 @@ from abc import ABC
 from copy import deepcopy
 from typing import List, Optional
 from dataclasses import dataclass
-from okean.data_types.basic_types import Doc
+from okean.data_types.basic_types import Passage
 
 
 @dataclass
@@ -112,29 +112,29 @@ class DenseRetriever(ABC):
     def __call__(
             self, 
             texts: List[str]|str = None, 
-            docs: List[Doc]|Doc = None,
+            passages: List[Passage]|Passage = None,
             batch_size: int = 8,
             k: int = 10,
-    ) -> List[Doc]:
-        # Cast `texts` to `docs` if `docs` is not provided
-        if docs is None:
-            assert texts is not None, "Either `text` or `docs` must be provided."
+    ) -> List[Passage]:
+        # Cast `texts` to `passages` if `passages` is not provided
+        if passages is None:
+            assert texts is not None, "Either `text` or `passages` must be provided."
             if isinstance(texts, list):
-                docs = [Doc(text=t) for t in texts]
+                passages = [Passage(text=t) for t in texts]
             else:
-                docs = [Doc(text=texts)]
-        # Ensure that `docs` is a list of `Doc` objects
-        if not isinstance(docs, list):
-            docs = [docs]
+                passages = [Passage(text=texts)]
+        # Ensure that `passages` is a list of `Passage` objects
+        if not isinstance(passages, list):
+            passages = [passages]
 
         if self.search_engine is None:
             raise ValueError("Corpus not built. Use `build_corpus` method to build the corpus.")
 
-        queries: List[str] = [doc.text for doc in docs]
+        queries: List[str] = [passage.text for passage in passages]
         vectors = self.queries_encoding(queries, batch_size=batch_size)
         scoress, indicess = self.search_engine.search(vectors, k=min(k, len(self.corpus_contents)))
 
-        docs = deepcopy(docs)
-        for doc, scores, indices in zip(docs, scoress, indicess):
-            doc.relevant_docs = [Doc(text=self.corpus_contents[idx], confident=score) for score, idx in zip(scores, indices)]
-        return docs
+        passages = deepcopy(passages)
+        for passage, scores, indices in zip(passages, scoress, indicess):
+            passage.relevant_docs = [Passage(text=self.corpus_contents[idx], confident=score) for score, idx in zip(scores, indices)]
+        return passages

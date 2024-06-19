@@ -2,7 +2,7 @@ import os
 import torch
 from typing import List, Optional
 from okean.utilities.readers import read_entity_corpus
-from okean.data_types.basic_types import Doc, Span, Entity
+from okean.data_types.basic_types import Passage, Span, Entity
 from okean.modules.entity_linking.baseclass import EntityLinking
 from okean.packages.refined_package.inference.processor import Refined
 from okean.packages.refined_package.data_types.doc_types import Doc as _Doc
@@ -44,18 +44,18 @@ class ReFinED(EntityLinking):
     def __call__(
             self, 
             texts: List[str]|str = None, 
-            docs: List[Doc]|Doc = None,
-    ) -> List[Doc]:
-        docs = super().__call__(texts=texts, docs=docs)
+            passages: List[Passage]|Passage = None,
+    ) -> List[Passage]:
+        passages = super().__call__(texts=texts, passages=passages)
 
         _docs: List[_Doc] = self.refined.process_text_batch(
-            texts=[d.text for d in docs],
-            spanss=[[_Span(text=span.surface_form, start=span.start, ln=span.end - span.start) for span in d.entities] for d in docs] if docs[0].entities is not None else None,
+            texts=[d.text for d in passages],
+            spanss=[[_Span(text=span.surface_form, start=span.start, ln=span.end - span.start) for span in d.entities] for d in passages] if passages[0].entities is not None else None,
         )
 
-        # Post-process to convert ReFinED object (`_docs`) to standard object (`docs`)
-        for _doc, doc in zip(_docs, docs):
-            doc.entities = [
+        # Post-process to convert ReFinED object (`_docs`) to standard object (`passages`)
+        for _doc, passage in zip(_docs, passages):
+            passage.entities = [
                 Span(
                     start=_span.start, 
                     end=_span.start + _span.ln,
@@ -69,11 +69,11 @@ class ReFinED(EntityLinking):
                     ] if _span.top_k_predicted_entities is not None else None
                 ) for _span in _doc.spans
             ]
-        return docs
+        return passages
     
 
 if __name__ == "__main__":
-    from okean.data_types.basic_types import Doc
+    from okean.data_types.basic_types import Passage
 
     el_model = ReFinED(model_path="./data/models/aida_refined", entity_corpus_path="./data/entity_corpus/refined_entity_corpus.jsonl")
 
@@ -82,9 +82,9 @@ if __name__ == "__main__":
         "Michael Jordan (Michael Irwin Jordan) is a professor at which university?",
         "What year did Michael Jordan win his first NBA championship?",
     ]
-    docs = el_model(texts)
-    for doc in docs:
-        print(doc.text)
-        for span in doc.entities:
+    passages = el_model(texts)
+    for passage in passages:
+        print(passage.text)
+        for span in passage.entities:
             print(f"\t{span}")
         print("-" * 100)
