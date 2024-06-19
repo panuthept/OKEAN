@@ -14,13 +14,13 @@ text = "Which member of Black Eyed Peas appeared in Poseidon?"
 
 ir_model = mE5()
 ir_model.build_corpus(corpus_path="<PATH_TO_CORPUS>", texts=corpus)
-doc = ir_model(text)
->> Doc(
+response = ir_model(text)
+>> Passage(
   text="Which member of Black Eyed Peas appeared in Poseidon?",
-  relevant_docs=[
-    Doc(text="...", confident=0.9),
-    Doc(text="...", confident=0.8),
-    Doc(text="...", confident=0.7),
+  relevant_passages=[
+    Passage(text="...", confident=0.9),
+    Passage(text="...", confident=0.8),
+    Passage(text="...", confident=0.7),
   ]
 )
 ```
@@ -35,8 +35,8 @@ from okean.modules.entity_linking.refined import ReFinED
 text = "Which member of Black Eyed Peas appeared in Poseidon?"
 
 el_model = ELQ()
-doc = el_model(text)
->> Doc(
+response = el_model(text)
+>> Passage(
   text="Which member of Black Eyed Peas appeared in Poseidon?",
   entities=[
     Span(start=16, end=31, text="Black Eyed Peas", entity=Entity(identifier="Q134541")),
@@ -53,7 +53,7 @@ from okean.modules.entity_linking.refined import ReFinED
 from okean.modules.entity_disambiguation.blink import BLINK
 from okean.modules.entity_disambiguation.global_ed import GlobalED
 
-doc = Doc(
+passage = Passage(
   text="Which member of Black Eyed Peas appeared in Poseidon?",
   entities=[
     Span(start=16, end=31, text="Black Eyed Peas", entity=None),
@@ -62,8 +62,8 @@ doc = Doc(
 )
 
 ed_model = BLINK()
-doc = ed_model(doc)
->> Doc(
+response = ed_model(passage)
+>> Passage(
   text="Which member of Black Eyed Peas appeared in Poseidon?",
   entities=[
     Span(start=16, end=31, text="Black Eyed Peas", entity=Entity(identifier="Q134541")),
@@ -93,7 +93,7 @@ kaping_model = KAPING(
   kg=WikidataKG()
 )
 
-answer = kaping_model(text)
+response = kaping_model(text)
 >> Fergie
 ```
 
@@ -114,7 +114,7 @@ retrieval_model = KEIX(
   kg=WikidataKG()
 )
 
-docs = retrieval_model(text)
+response = retrieval_model(text)
 ```
 
 ## Training Toolkit
