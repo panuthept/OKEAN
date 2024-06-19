@@ -68,12 +68,7 @@ class ReFinED(EntityLinking):
                     start=_span.start, 
                     end=_span.start + _span.ln,
                     surface_form=_span.text,
-                    entity=Entity(
-                        identifier=_span.top_k_predicted_entities[0][0].wikidata_entity_id if _span.top_k_predicted_entities[0][0].wikidata_entity_id is not None else "Q0",
-                        confident=_span.top_k_predicted_entities[0][1],
-                        metadata=self.entity_corpus.get(_span.top_k_predicted_entities[0][0].wikidata_entity_id, None),
-                    ),
-                    candidates=[
+                    entities=[
                         Entity(
                             identifier=_entity.wikidata_entity_id if _entity.wikidata_entity_id is not None else "Q0",
                             confident=score,
@@ -115,6 +110,5 @@ if __name__ == "__main__":
     for doc in docs:
         print(doc.text)
         for span in doc.entities:
-            span.candidates = None
             print(f"\t{span}")
         print("-" * 100)

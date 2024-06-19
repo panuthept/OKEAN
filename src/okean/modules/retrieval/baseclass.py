@@ -1,20 +1,121 @@
+import os
+import faiss
+import numpy as np
 from abc import ABC
-from typing import List, Optional
+from typing import List
+from copy import deepcopy
+from dataclasses import dataclass
 from okean.data_types.basic_types import Doc
 
 
+@dataclass
+class FaissEngineConfig:
+    index_type: str = "Flat"
+    distance: str = "IP"
+    dim: int = 768
+    lsh_nbits_factor: int = 4
+    hnsw_m: int = 64
+    hnsw_ef_search: int = 32
+    hnsw_ef_construction: int = 64
+    ivf_nlist: int = 128
+    ivf_nprobe: int = 8
+
+
+class FaissEngine:
+    def __init__(self, config: FaissEngineConfig):
+        assert config.index_type in ["Flat", "LSH", "HNSW", "IVF"], "Invalid index type."
+        assert config.distance in ["IP", "L2"], "Invalid distance type."
+
+        if config.index_type == "LSH" and config.dim > 128:
+            print(f"LSH index is not recommended for dim > 128. Got dim={config.dim}. Consider using HNSW index instead.")
+
+        self.config = config
+        self.index = self._create_index(config)
+
+    @staticmethod
+    def _create_index(config: FaissEngineConfig) -> faiss.Index:
+        if config.index_type == "Flat":
+            index = faiss.IndexFlatIP(config.dim) if config.distance == "IP" else faiss.IndexFlatL2(config.dim)
+        elif config.index_type == "LSH":
+            index = faiss.IndexLSH(config.dim, config.dim * config.lsh_nbits_factor)
+        elif config.index_type == "HNSW":
+            index = faiss.IndexHNSWFlat(config.dim, config.hnsw_m)
+            index.hnsw.efSearch = config.hnsw_ef_search
+            index.hnsw.efConstruction = config.hnsw_ef_construction
+        elif config.index_type == "IVF":
+            quantizer = faiss.IndexFlatIP(config.dim) if config.distance == "IP" else faiss.IndexFlatL2(config.dim)
+            index = faiss.IndexIVFFlat(quantizer, config.dim, config.ivf_nlist)
+        return index
+    
+    def add(self, vectors: np.ndarray):
+        if self.config.index_type == "IVF":
+            self.index.train(vectors)
+            self.index.add(vectors)
+            self.index.nprobe = self.config.ivf_nprobe
+        else:
+            self.index.add(vectors)
+    
+    def search(self, query: np.ndarray, k: int = 10) -> List[int]:
+        scores, indices = self.index.search(query, k)
+        return scores, indices
+
+
 class DenseRetriever(ABC):
+    def __init__(self, corpus_path: str, search_config: FaissEngineConfig):
+        self.corpus_path = corpus_path
+        self.search_config = search_config
 
-    def search(self, query: str) -> List[Doc]:
+        self.corpus_contents = []
+        self.corpus_embeddings = None
+        self.search_engine = None
+
+        if os.path.exists(corpus_path):
+            print(f"Loading corpus from {corpus_path}.")
+            self.load_corpus()
+
+    def save_corpus(self):
+        os.makedirs(self.corpus_path, exist_ok=True)
+        np.save(os.path.join(self.corpus_path, "embeddings.npy"), self.corpus_embeddings)
+        with open(os.path.join(self.corpus_path, "contents.txt"), "w") as f:
+            f.write("\n".join(self.corpus_contents))
+
+    def load_corpus(self):
+        self.corpus_embeddings = np.load(os.path.join(self.corpus_path, "embeddings.npy"))
+        with open(os.path.join(self.corpus_path, "contents.txt"), "r") as f:
+            self.corpus_contents = f.read().splitlines()
+        self.search_engine = FaissEngine(self.search_config)
+        self.search_engine.add(self.corpus_embeddings)
+    
+    def corpus_encoding(self, texts: List[str], batch_size: int = 8) -> np.ndarray:
         raise NotImplementedError
 
-    def docs_encoding(self, docs: List[Doc]) -> List[Doc]:
+    def queries_encoding(self, texts: List[str], batch_size: int = 8) -> np.ndarray:
         raise NotImplementedError
+
+    def build_corpus(self, texts: List[str], batch_size: int = 8, remove_existing: bool = False, skip_existing: bool = True):
+        if os.path.exists(self.corpus_path) and not remove_existing:
+            if skip_existing:
+                print(f"Corpus already exists at {self.corpus_path}. Set `remove_existing=True` to overwrite.")
+                return
+            raise FileExistsError(f"Corpus already exists at {self.corpus_path}. Set `skip_existing=True` to skip or `remove_existing=True` to overwrite.")
+        
+        if os.path.exists(self.corpus_path) and remove_existing:
+            print(f"Removing existing corpus at {self.corpus_path}.")
+            os.remove(self.corpus_path)
+
+        self.corpus_contents = texts
+        self.corpus_embeddings = self.corpus_encoding(texts, batch_size=batch_size)
+
+        self.search_engine = FaissEngine(self.search_config)
+        self.search_engine.add(self.corpus_embeddings)
+        self.save_corpus()
 
     def __call__(
             self, 
             texts: List[str]|str = None, 
             docs: List[Doc]|Doc = None,
+            batch_size: int = 8,
+            k: int = 10,
     ) -> List[Doc]:
         # Cast `texts` to `docs` if `docs` is not provided
         if docs is None:
@@ -27,13 +128,14 @@ class DenseRetriever(ABC):
         if not isinstance(docs, list):
             docs = [docs]
 
-        docs = self.docs_encoding(docs)
+        if self.search_engine is None:
+            raise ValueError("Corpus not built. Use `build_corpus` method to build the corpus.")
+
+        queries: List[str] = [doc.text for doc in docs]
+        vectors = self.queries_encoding(queries, batch_size=batch_size)
+        scoress, indicess = self.search_engine.search(vectors, k=min(k, len(self.corpus_contents)))
+
+        docs = deepcopy(docs)
+        for doc, scores, indices in zip(docs, scoress, indicess):
+            doc.relevant_docs = [Doc(text=self.corpus_contents[idx], confident=score) for score, idx in zip(scores, indices)]
         return docs
-    
-    def from_pretrained(
-        cls, 
-        model_path: str,
-        document_corpus_path: str,
-        device: Optional[str] = None,
-    ):
-        raise NotImplementedError

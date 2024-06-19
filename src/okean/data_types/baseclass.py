@@ -1,8 +1,6 @@
 from typing import Dict, Any
-from dataclasses import dataclass
 
 
-@dataclass
 class BaseDataType:
     def from_dict(self, dict_data: Dict[str, Any]) -> "BaseDataType":
         for key, value in dict_data.items():
