@@ -8,8 +8,14 @@ from okean.modules.retrieval.baseclass import DenseRetriever, FaissEngineConfig
 
 
 class mE5(DenseRetriever):
-    def __init__(self, corpus_path: str, search_config: FaissEngineConfig, model_path: str = "intfloat/multilingual-e5-base", device: Optional[str] = None):
-        super().__init__(corpus_path, search_config)
+    def __init__(
+            self, 
+            model_path: str = "intfloat/multilingual-e5-base", 
+            search_config: Optional[FaissEngineConfig] = None, 
+            corpus_path: Optional[str] = None, 
+            device: Optional[str] = None,
+    ):
+        super().__init__(search_config, corpus_path)
         self.device = device if device else "cuda" if torch.cuda.is_available() else "cpu"
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         self.model = AutoModel.from_pretrained(model_path)
@@ -43,9 +49,9 @@ class mE5(DenseRetriever):
     
 
 if __name__ == "__main__":
-    retriever = mE5(corpus_path="./corpus/mE5", search_config=FaissEngineConfig(dim=768))
+    retriever = mE5(corpus_path="./corpus/mE5")
     texts = ["Hello, how are you?", "I am fine, thank you!"]
-    retriever.build_corpus(texts)
+    retriever.build_corpus(corpus_path="./corpus/mE5", texts=texts)
     queries = ["How are you?", "How are you doing?"]
     results = retriever(queries)
     print(results)

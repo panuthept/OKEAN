@@ -2,8 +2,8 @@ import os
 import faiss
 import numpy as np
 from abc import ABC
-from typing import List
 from copy import deepcopy
+from typing import List, Optional
 from dataclasses import dataclass
 from okean.data_types.basic_types import Doc
 
@@ -61,27 +61,26 @@ class FaissEngine:
 
 
 class DenseRetriever(ABC):
-    def __init__(self, corpus_path: str, search_config: FaissEngineConfig):
-        self.corpus_path = corpus_path
-        self.search_config = search_config
+    def __init__(self, search_config: Optional[FaissEngineConfig] = None, corpus_path: Optional[str] = None):
+        self.search_config = search_config if search_config is not None else FaissEngineConfig()
 
         self.corpus_contents = []
         self.corpus_embeddings = None
         self.search_engine = None
 
-        if os.path.exists(corpus_path):
+        if corpus_path is not None and os.path.exists(corpus_path):
             print(f"Loading corpus from {corpus_path}.")
-            self.load_corpus()
+            self.load_corpus(corpus_path)
 
-    def save_corpus(self):
-        os.makedirs(self.corpus_path, exist_ok=True)
-        np.save(os.path.join(self.corpus_path, "embeddings.npy"), self.corpus_embeddings)
-        with open(os.path.join(self.corpus_path, "contents.txt"), "w") as f:
+    def save_corpus(self, corpus_path: str):
+        os.makedirs(corpus_path, exist_ok=True)
+        np.save(os.path.join(corpus_path, "embeddings.npy"), self.corpus_embeddings)
+        with open(os.path.join(corpus_path, "contents.txt"), "w") as f:
             f.write("\n".join(self.corpus_contents))
 
-    def load_corpus(self):
-        self.corpus_embeddings = np.load(os.path.join(self.corpus_path, "embeddings.npy"))
-        with open(os.path.join(self.corpus_path, "contents.txt"), "r") as f:
+    def load_corpus(self, corpus_path: str):
+        self.corpus_embeddings = np.load(os.path.join(corpus_path, "embeddings.npy"))
+        with open(os.path.join(corpus_path, "contents.txt"), "r") as f:
             self.corpus_contents = f.read().splitlines()
         self.search_engine = FaissEngine(self.search_config)
         self.search_engine.add(self.corpus_embeddings)
@@ -92,23 +91,23 @@ class DenseRetriever(ABC):
     def queries_encoding(self, texts: List[str], batch_size: int = 8) -> np.ndarray:
         raise NotImplementedError
 
-    def build_corpus(self, texts: List[str], batch_size: int = 8, remove_existing: bool = False, skip_existing: bool = True):
-        if os.path.exists(self.corpus_path) and not remove_existing:
+    def build_corpus(self, corpus_path: str, texts: List[str], batch_size: int = 8, remove_existing: bool = False, skip_existing: bool = True):
+        if os.path.exists(corpus_path) and not remove_existing:
             if skip_existing:
-                print(f"Corpus already exists at {self.corpus_path}. Set `remove_existing=True` to overwrite.")
+                print(f"Corpus already exists at {corpus_path}. Set `remove_existing=True` to overwrite.")
                 return
-            raise FileExistsError(f"Corpus already exists at {self.corpus_path}. Set `skip_existing=True` to skip or `remove_existing=True` to overwrite.")
+            raise FileExistsError(f"Corpus already exists at {corpus_path}. Set `skip_existing=True` to skip or `remove_existing=True` to overwrite.")
         
-        if os.path.exists(self.corpus_path) and remove_existing:
-            print(f"Removing existing corpus at {self.corpus_path}.")
-            os.remove(self.corpus_path)
+        if os.path.exists(corpus_path) and remove_existing:
+            print(f"Removing existing corpus at {corpus_path}.")
+            os.remove(corpus_path)
 
         self.corpus_contents = texts
         self.corpus_embeddings = self.corpus_encoding(texts, batch_size=batch_size)
 
         self.search_engine = FaissEngine(self.search_config)
         self.search_engine.add(self.corpus_embeddings)
-        self.save_corpus()
+        self.save_corpus(corpus_path)
 
     def __call__(
             self, 
