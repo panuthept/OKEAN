@@ -22,4 +22,6 @@ class Span(BaseDataType):
 @dataclass
 class Doc(BaseDataType):
     text: str
+    vector: Optional[List[float]] = None
     entities: Optional[List[Span]] = None
+    relevant_docs: Optional[List['Doc']] = None

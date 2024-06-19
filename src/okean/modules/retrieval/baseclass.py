@@ -3,7 +3,14 @@ from typing import List, Optional
 from okean.data_types.basic_types import Doc
 
 
-class EntityLinking(ABC):
+class DenseRetriever(ABC):
+
+    def search(self, query: str) -> List[Doc]:
+        raise NotImplementedError
+
+    def docs_encoding(self, docs: List[Doc]) -> List[Doc]:
+        raise NotImplementedError
+
     def __call__(
             self, 
             texts: List[str]|str = None, 
@@ -19,4 +26,14 @@ class EntityLinking(ABC):
         # Ensure that `docs` is a list of `Doc` objects
         if not isinstance(docs, list):
             docs = [docs]
+
+        docs = self.docs_encoding(docs)
         return docs
+    
+    def from_pretrained(
+        cls, 
+        model_path: str,
+        document_corpus_path: str,
+        device: Optional[str] = None,
+    ):
+        raise NotImplementedError

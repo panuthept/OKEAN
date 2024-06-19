@@ -6,7 +6,7 @@
 [Knowledge-Augmented Language Model Prompting for Zero-Shot Knowledge Graph Question Answering (Baek et al., NLRSE 2023)](https://aclanthology.org/2023.nlrse-1.7)
 
 ```python
-from okean.modules.kgqa.kaping import KAPING
+from okean.frameworks.kaping import KAPING
 from okean.modules.ranking.mpnet import MPNet
 from okean.modules.generative_llms.t5 import T5
 from okean.knowledge_base.wikidata import WikidataKG
@@ -15,10 +15,10 @@ from okean.modules.entity_linking.refined import ReFinED
 text = "Which member of Black Eyed Peas appeared in Poseidon?"
 
 kaping_model = KAPING(
-  el_model=ReFinED.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>"),
-  ranking_model=MPNet.from_pretrained(model_path="<PATH_TO_MODEL>"),
-  llm_model=T5.from_pretrained(model_path="<PATH_TO_MODEL>"),
-  kg=WikidataKG("<PATH_TO_KG>")
+  el_model=ReFinED(),
+  ranking_model=MPNet(),
+  llm_model=T5(),
+  kg=WikidataKG()
 )
 
 answer = kaping_model(text)
@@ -26,37 +26,39 @@ answer = kaping_model(text)
 ```
 
 ## Knowledge-Enhanced Information Retrieval (KEIR)
+
+#### KEIX (Knowledge-Enhanced Information retrieval with query understanding eXpansion) 
 ```python
-from okean.pipelines.keir import KEIR
+from okean.frameworks.keix import KEIX
 from okean.modules.retrieval.dpr import DPR
+from okean.knowledge_base.wikidata import WikidataKG
 from okean.modules.entity_linking.refined import ReFinED
-from okean.preprocessing.doc_transformation import EntityDisambiguation
 
 text = "What year did Michael Jordan win his first NBA championship?"
 
-keir_model = KEIR(
-  el_model=ReFinED.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>"),
-  ir_model=DPR.from_pretrained(model_path="<PATH_TO_MODEL>", document_corpus_path="<PATH_TO_CORPUS>"),
-  doc_transformer=EntityDisambiguation()
+retrieval_model = KEIX(
+  el_model=ReFinED(),
+  ir_model=DPR(document_corpus_path="<PATH_TO_CORPUS>"),
+  kg=WikidataKG()
 )
 
-relevant_docs = keir_model(text)
+docs = retrieval_model(text)
 ```
 
 ## Training Toolkit
 ```python
 from okean.modules.entity_linking.refined import ReFinED
 from okean.datasets.entity_linking import EntityLinkingDataset
-from okean.trainers.entity_linking.refined import ReFinEDTrainer
+from okean.trainers.entity_linking.refined import ReFinEDTrainer, ReFinEDTrainerConfig
 
 train_set = EntityLinkingDataset("<PATH_TO_DATASET>")
 dev_set = EntityLinkingDataset("<PATH_TO_DATASET>")
 
-el_model = ReFinED.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>")
-el_trainer = ReFinEDTrainer(el_model)
-el_trainer.train(train_set=train_set, dev_set=dev_set)
+config = ReFinEDTrainerConfig()
+trainer = ReFinEDTrainer(config)
+trainer.train(train_set=train_set, dev_set=dev_set)
 
-el_trainer.save_pretrained("<PATH_TO_SAVE>")
+trainer.save_pretrained("<PATH_TO_SAVE>")
 ```
 
 ## Evaluation Toolkit
@@ -72,7 +74,7 @@ test_sets = {
   "Mintaka": EntityLinkingDataset("<PATH_TO_DATASET>"),
 }
 
-el_model = ReFinED.from_pretrained(model_path="<PATH_TO_MODEL>", entity_corpus_path="<PATH_TO_CORPUS>")
+el_model = ReFinED(model_path"<PATH_TO_MODEL>")
 el_benchmark = EntityLinkingBenchmark(
   metrics=["precision", "recall", "f1"],
   entity_corpus_path="<PATH_TO_CORPUS>",

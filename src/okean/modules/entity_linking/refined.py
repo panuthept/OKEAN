@@ -5,11 +5,11 @@ from dataclasses import dataclass
 from okean.data_types.baseclass import BaseDataType
 from okean.utilities.readers import read_entity_corpus
 from okean.data_types.basic_types import Doc, Span, Entity
-from okean.modules.entity_linking.baseclass import BaseEntityLinking
-from okean.modules.entity_linking.refined_package.inference.processor import Refined
-from okean.modules.entity_linking.refined_package.data_types.doc_types import Doc as _Doc
-from okean.modules.entity_linking.refined_package.data_types.base_types import Span as _Span
-from okean.modules.entity_linking.refined_package.doc_preprocessing.preprocessor import PreprocessorInferenceOnly
+from okean.modules.entity_linking.baseclass import EntityLinking
+from okean.packages.refined_package.inference.processor import Refined
+from okean.packages.refined_package.data_types.doc_types import Doc as _Doc
+from okean.packages.refined_package.data_types.base_types import Span as _Span
+from okean.packages.refined_package.doc_preprocessing.preprocessor import PreprocessorInferenceOnly
 
 
 @dataclass
@@ -21,7 +21,7 @@ class ReFinEDConfig(BaseDataType):
     max_candidates: int = 30
 
 
-class ReFinED(BaseEntityLinking):
+class ReFinED(EntityLinking):
     """
     This class is a wrapper for the ReFinED model.
     """
@@ -54,16 +54,7 @@ class ReFinED(BaseEntityLinking):
             texts: List[str]|str = None, 
             docs: List[Doc]|Doc = None,
     ) -> List[Doc]:
-        # Cast `texts` to `docs` if `docs` is not provided
-        if docs is None:
-            assert texts is not None, "Either `text` or `docs` must be provided."
-            if isinstance(texts, list):
-                docs = [Doc(text=t) for t in texts]
-            else:
-                docs = [Doc(text=texts)]
-        # Ensure that `docs` is a list of `Doc` objects
-        if not isinstance(docs, list):
-            docs = [docs]
+        docs = super().__call__(texts=texts, docs=docs)
 
         _docs: List[_Doc] = self.refined.process_text_batch(
             texts=[d.text for d in docs],
