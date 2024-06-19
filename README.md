@@ -1,5 +1,52 @@
 # OKEAN - Open Knowledge Enhancement Applications in NLP
 
+## Entity Linking (EL)
+
+```python
+from okean.modules.entity_linking.elq import ELQ
+from okean.modules.entity_linking.genre import GENRE
+from okean.modules.entity_linking.refined import ReFinED
+
+text = "Which member of Black Eyed Peas appeared in Poseidon?"
+
+el_model = ELQ()
+doc = el_model(text)
+>> Doc(
+  text="Which member of Black Eyed Peas appeared in Poseidon?",
+  entities=[
+    Span(start=16, end=31, text="Black Eyed Peas", entity=Entity(identifier="Q134541")),
+    Span(start=44, end=52, text="Poseidon", entity=Entity(identifier="Q906633")),
+  ]
+)
+```
+
+## Entity Disambiguation (ED)
+```python
+from okean.modules.entity_linking.elq import ELQ
+from okean.modules.entity_linking.genre import GENRE
+from okean.modules.entity_linking.refined import ReFinED
+from okean.modules.entity_disambiguation.blink import BLINK
+from okean.modules.entity_disambiguation.global_ed import GlobalED
+
+doc = Doc(
+  text="Which member of Black Eyed Peas appeared in Poseidon?",
+  entities=[
+    Span(start=16, end=31, text="Black Eyed Peas", entity=None),
+    Span(start=44, end=52, text="Poseidon", entity=None),
+  ]
+)
+
+ed_model = BLINK()
+doc = ed_model(doc)
+>> Doc(
+  text="Which member of Black Eyed Peas appeared in Poseidon?",
+  entities=[
+    Span(start=16, end=31, text="Black Eyed Peas", entity=Entity(identifier="Q134541")),
+    Span(start=44, end=52, text="Poseidon", entity=Entity(identifier="Q906633")),
+  ]
+)
+```
+
 ## Knowledge Graph Question Answering (KGQA)
 
 #### KAPING (Knowledge-Augmented language model PromptING) 
