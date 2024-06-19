@@ -1,8 +1,6 @@
 import os
 import torch
 from typing import List, Optional
-from dataclasses import dataclass
-from okean.data_types.baseclass import BaseDataType
 from okean.utilities.readers import read_entity_corpus
 from okean.data_types.basic_types import Doc, Span, Entity
 from okean.modules.entity_linking.baseclass import EntityLinking
@@ -12,39 +10,33 @@ from okean.packages.refined_package.data_types.base_types import Span as _Span
 from okean.packages.refined_package.doc_preprocessing.preprocessor import PreprocessorInferenceOnly
 
 
-@dataclass
-class ReFinEDConfig(BaseDataType):
-    model_file_path: str
-    model_config_file_path: str
-    use_precomputed_descriptions: bool = False
-    precomputed_descriptions_emb_file_path: Optional[str] = None
-    max_candidates: int = 30
-
-
 class ReFinED(EntityLinking):
-    """
-    This class is a wrapper for the ReFinED model.
-    """
     def __init__(
             self, 
-            config: ReFinEDConfig,
+            model_path: str,
             entity_corpus_path: str,
+            max_candidates: int = 30,
             device: Optional[str] = None,
     ):
+        model_file_path=os.path.join(model_path, "model.pt")
+        model_config_file_path=os.path.join(model_path, "config.json")
+        use_precomputed_descriptions=os.path.exists(os.path.join(model_path, "precomputed_entity_descriptions_emb_wikipedia_6269457-300.np"))
+        precomputed_descriptions_emb_file_path=os.path.join(model_path, "precomputed_entity_descriptions_emb_wikipedia_6269457-300.np")
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else torch.device(device)
         self.preprocessor = PreprocessorInferenceOnly.from_model_config_file(
-            filename=config.model_config_file_path,
+            filename=model_config_file_path,
             data_dir="/Users/panuthep/.cache/refined",
-            use_precomputed_description_embeddings=config.use_precomputed_descriptions,
-            model_description_embeddings_file=config.precomputed_descriptions_emb_file_path,
-            max_candidates=config.max_candidates,
+            use_precomputed_description_embeddings=use_precomputed_descriptions,
+            model_description_embeddings_file=precomputed_descriptions_emb_file_path,
+            max_candidates=max_candidates,
         )
         self.refined = Refined(
-            model_file_or_model=config.model_file_path,
-            model_config_file_or_model_config=config.model_config_file_path,
+            model_file_or_model=model_file_path,
+            model_config_file_or_model_config=model_config_file_path,
             data_dir="/Users/panuthep/.cache/refined",
             preprocessor=self.preprocessor,
-            use_precomputed_descriptions=config.use_precomputed_descriptions,
+            use_precomputed_descriptions=use_precomputed_descriptions,
             device=device,
         )
         self.entity_corpus = read_entity_corpus(entity_corpus_path)
@@ -78,28 +70,12 @@ class ReFinED(EntityLinking):
                 ) for _span in _doc.spans
             ]
         return docs
-        
-
-    @classmethod
-    def from_pretrained(
-        cls, 
-        model_path: str,
-        entity_corpus_path: str,
-        device: Optional[str] = None,
-    ):
-        config = ReFinEDConfig(
-            model_file_path=os.path.join(model_path, "model.pt"),
-            model_config_file_path=os.path.join(model_path, "config.json"),
-            use_precomputed_descriptions=os.path.exists(os.path.join(model_path, "precomputed_entity_descriptions_emb_wikipedia_6269457-300.np")),
-            precomputed_descriptions_emb_file_path=os.path.join(model_path, "precomputed_entity_descriptions_emb_wikipedia_6269457-300.np"),
-        )
-        return cls(config, entity_corpus_path, device=device)
     
 
 if __name__ == "__main__":
     from okean.data_types.basic_types import Doc
 
-    el_model = ReFinED.from_pretrained(model_path="./data/models/aida_refined", entity_corpus_path="./data/entity_corpus/refined_entity_corpus.jsonl")
+    el_model = ReFinED(model_path="./data/models/aida_refined", entity_corpus_path="./data/entity_corpus/refined_entity_corpus.jsonl")
 
     texts = [
         "Michael Jordan published a new paper on machine learning.",
