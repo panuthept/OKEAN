@@ -1,5 +1,6 @@
 import os
 import faiss
+import shutil
 import numpy as np
 from abc import ABC
 from copy import deepcopy
@@ -100,7 +101,7 @@ class DenseRetriever(ABC):
         
         if os.path.exists(corpus_path) and remove_existing:
             print(f"Removing existing corpus at {corpus_path}.")
-            os.remove(corpus_path)
+            shutil.rmtree(corpus_path)
 
         self.corpus_contents = texts
         self.corpus_embeddings = self.corpus_encoding(texts, batch_size=batch_size)
@@ -136,5 +137,5 @@ class DenseRetriever(ABC):
 
         passages = deepcopy(passages)
         for passage, scores, indices in zip(passages, scoress, indicess):
-            passage.relevant_docs = [Passage(text=self.corpus_contents[idx], confident=score) for score, idx in zip(scores, indices)]
+            passage.relevant_passages = [Passage(text=self.corpus_contents[idx], confident=score) for score, idx in zip(scores, indices)]
         return passages

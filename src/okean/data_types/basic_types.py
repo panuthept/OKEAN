@@ -10,11 +10,11 @@ class Entity(BaseDataType):
     metadata: Optional[Dict[str, Any]] = None
 
     def __repr__(self) -> str:
-        attributes = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
+        attributes = ", ".join([f"{k}='{v}'" if isinstance(v, str) else f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
         return f"{self.__class__.__name__}({attributes})"
 
     def __str__(self) -> str:
-        attributes = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
+        attributes = ", ".join([f"{k}='{v}'" if isinstance(v, str) else f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
         return f"{self.__class__.__name__}({attributes})"
 
 
@@ -28,11 +28,11 @@ class Span(BaseDataType):
     candidates: Optional[List[Entity]] = None
 
     def __repr__(self) -> str:
-        attributes = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
+        attributes = ", ".join([f"{k}='{v}'" if isinstance(v, str) else f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
         return f"{self.__class__.__name__}({attributes})"
 
     def __str__(self) -> str:
-        attributes = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
+        attributes = ", ".join([f"{k}='{v}'" if isinstance(v, str) else f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
         return f"{self.__class__.__name__}({attributes})"
     
 
@@ -44,11 +44,11 @@ class Passage(BaseDataType):
     relevant_passages: Optional[List['Passage']] = None
 
     def __repr__(self) -> str:
-        attributes = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
+        attributes = ", ".join([f"{k}='{v}'" if isinstance(v, str) else f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
         return f"{self.__class__.__name__}({attributes})"
 
     def __str__(self) -> str:
-        attributes = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
+        attributes = ", ".join([f"{k}='{v}'" if isinstance(v, str) else f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
         return f"{self.__class__.__name__}({attributes})"
 
 
@@ -58,9 +58,9 @@ class Document(BaseDataType):
     confident: Optional[float] = None
 
     def __repr__(self) -> str:
-        attributes = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
+        attributes = ", ".join([f"{k}='{v}'" if isinstance(v, str) else f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
         return f"{self.__class__.__name__}({attributes})"
 
     def __str__(self) -> str:
-        attributes = ", ".join([f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
+        attributes = ", ".join([f"{k}='{v}'" if isinstance(v, str) else f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
         return f"{self.__class__.__name__}({attributes})"
