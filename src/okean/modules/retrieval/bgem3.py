@@ -100,38 +100,34 @@ class BGEM3(Retriever):
 
         queries: List[str] = [passage.text for passage in passages]
         queries_embeddings = self.queries_encoding(queries, batch_size=batch_size)
+        
         dense_scores = np.array(queries_embeddings["dense_vecs"] @ self.corpus_embeddings["dense_vecs"].T)
-        print(dense_scores)
         sparse_scores = np.array([[self.model.compute_lexical_matching_score(query_lexical_weights, corpus_lexical_weights) for corpus_lexical_weights in self.corpus_embeddings["lexical_weights"]] for query_lexical_weights in queries_embeddings["lexical_weights"]])
-        print(sparse_scores)
-        # colbert_scores = np.array([[self.model.colbert_score(query_colbert_vecs, corpus_colbert_vecs) for corpus_colbert_vecs in self.corpus_embeddings["colbert_vecs"]] for query_colbert_vecs in queries_embeddings["colbert_vecs"]])
-        # print(colbert_scores)
-        # bgem3_scores = (dense_weight * dense_scores) + (sparse_weight * sparse_scores) + (colbert_weight * colbert_scores)
-        # print(bgem3_scores)
-        # indicess = np.argsort(bgem3_scores, axis=1)[:, ::-1][:, :k]
-        # scoress = np.take_along_axis(bgem3_scores, indicess, axis=1)
-        # print(indicess)
-        # print(scoress)
+        colbert_scores = np.array([[self.model.colbert_score(query_colbert_vecs, corpus_colbert_vecs) for corpus_colbert_vecs in self.corpus_embeddings["colbert_vecs"]] for query_colbert_vecs in queries_embeddings["colbert_vecs"]])
+        bgem3_scores = (dense_weight * dense_scores) + (sparse_weight * sparse_scores) + (colbert_weight * colbert_scores)
 
-        # passages = deepcopy(passages)
-        # for passage, scores, indices in zip(passages, scoress, indicess):
-        #     passage.relations = [{"relevant_passage": Passage(text=self.corpus_contents[idx], confident=score) for score, idx in zip(scores, indices)}]
-        # return passages
+        indicess = np.argsort(bgem3_scores, axis=1)[:, ::-1][:, :k]
+        scoress = np.take_along_axis(bgem3_scores, indicess, axis=1)
+
+        passages = deepcopy(passages)
+        for passage, scores, indices in zip(passages, scoress, indicess):
+            passage.relations = [{"relevant_passage": Passage(text=self.corpus_contents[idx], confident=score) for score, idx in zip(scores, indices)}]
+        return passages
 
 
 if __name__ == "__main__":
-    retriever = BGEM3(corpus_path="./corpus/BGEM3")
+    retriever = BGEM3(corpus_path="./corpus/BGEM3", use_fp16=False)
 
-    # corpus = [
-    #     "Stacy Ann 'Fergie' Ferguson (born March 27, 1975) is an American singer, songwriter, rapper and actress. She first achieved chart success as part of the hip hop group the Black Eyed Peas. Her debut solo album, The Dutchess (2006), saw commercial success and spawned three Billboard Hot 100 number one singles: 'London Bridge', 'Glamorous', and 'Big Girls Don't Cry'.", 
-    #     "Jaime Luis Gomez[2] (born July 14, 1975),[3] better known by the stage names Taboo,[4] or Taboo Nawasha is an American rapper, singer, songwriter, actor, DJ, and comic book writer, best known as a member of the musical group Black Eyed Peas.",
-    #     "Fergie has additionally appeared as an actress in various films, such as Poseidon (2006), Grindhouse (2007), and Nine (2009). She launched her first fragrance, Outspoken, under Avon in May 2010 and has since released four more fragrances. Her footwear line, Fergie Footwear, was launched in 2009.",
-    #     "Black Eyed Peas (also known as The Black Eyed Peas) is an American musical group consisting of rappers will.i.am, apl.de.ap and Taboo. The group's lineup during the height of their popularity in the 2000s[5] featured Fergie, who replaced Kim Hill in 2002. Originally an alternative hip hop group, they subsequently refashioned themselves as a more marketable pop-rap act.[4] Although the group was founded in Los Angeles in 1995, it was not until the release of their third album Elephunk in 2003 that they achieved high record sales.",
-    #     "Poseidon is a 2006 American action disaster film directed and co-produced by Wolfgang Petersen. It is the third film adaptation of Paul Gallico's 1969 novel The Poseidon Adventure, and a loose remake of the 1972 film. It stars Kurt Russell, Josh Lucas and Richard Dreyfuss with Emmy Rossum, Jacinda Barrett, Mike Vogel, Mía Maestro, Jimmy Bennett and Andre Braugher in supporting roles. It was produced and distributed by Warner Bros. in association with Virtual Studios. It had a simultaneous release in IMAX format. It was released on May 12, 2006, and it was criticized for its script but was praised for its visuals and was nominated at the 79th Academy Awards for Best Visual Effects.[2] It grossed $181.7 million worldwide on a budget of $160 million; however, after the costs of promotion and distribution, Warner Bros. lost $70–80 million on the film, making it a box-office bomb as a result.",
-    #     "Michael Jeffrey Jordan (born February 17, 1963), also known by his initials MJ,[9] is an American businessman and former professional basketball player. He played fifteen seasons in the National Basketball Association (NBA) between 1984 and 2003, winning six NBA championships with the Chicago Bulls. He was integral in popularizing basketball and the NBA around the world in the 1980s and 1990s,[10] becoming a global cultural icon.[11] His profile on the NBA website states, 'By acclamation, Michael Jordan is the greatest basketball player of all time.'",
-    # ]
-    # query = "Which member of Black Eyed Peas appeared in Poseidon?"
+    corpus = [
+        "Stacy Ann 'Fergie' Ferguson (born March 27, 1975) is an American singer, songwriter, rapper and actress. She first achieved chart success as part of the hip hop group the Black Eyed Peas. Her debut solo album, The Dutchess (2006), saw commercial success and spawned three Billboard Hot 100 number one singles: 'London Bridge', 'Glamorous', and 'Big Girls Don't Cry'.", 
+        "Jaime Luis Gomez[2] (born July 14, 1975),[3] better known by the stage names Taboo,[4] or Taboo Nawasha is an American rapper, singer, songwriter, actor, DJ, and comic book writer, best known as a member of the musical group Black Eyed Peas.",
+        "Fergie has additionally appeared as an actress in various films, such as Poseidon (2006), Grindhouse (2007), and Nine (2009). She launched her first fragrance, Outspoken, under Avon in May 2010 and has since released four more fragrances. Her footwear line, Fergie Footwear, was launched in 2009.",
+        "Black Eyed Peas (also known as The Black Eyed Peas) is an American musical group consisting of rappers will.i.am, apl.de.ap and Taboo. The group's lineup during the height of their popularity in the 2000s[5] featured Fergie, who replaced Kim Hill in 2002. Originally an alternative hip hop group, they subsequently refashioned themselves as a more marketable pop-rap act.[4] Although the group was founded in Los Angeles in 1995, it was not until the release of their third album Elephunk in 2003 that they achieved high record sales.",
+        "Poseidon is a 2006 American action disaster film directed and co-produced by Wolfgang Petersen. It is the third film adaptation of Paul Gallico's 1969 novel The Poseidon Adventure, and a loose remake of the 1972 film. It stars Kurt Russell, Josh Lucas and Richard Dreyfuss with Emmy Rossum, Jacinda Barrett, Mike Vogel, Mía Maestro, Jimmy Bennett and Andre Braugher in supporting roles. It was produced and distributed by Warner Bros. in association with Virtual Studios. It had a simultaneous release in IMAX format. It was released on May 12, 2006, and it was criticized for its script but was praised for its visuals and was nominated at the 79th Academy Awards for Best Visual Effects.[2] It grossed $181.7 million worldwide on a budget of $160 million; however, after the costs of promotion and distribution, Warner Bros. lost $70–80 million on the film, making it a box-office bomb as a result.",
+        "Michael Jeffrey Jordan (born February 17, 1963), also known by his initials MJ,[9] is an American businessman and former professional basketball player. He played fifteen seasons in the National Basketball Association (NBA) between 1984 and 2003, winning six NBA championships with the Chicago Bulls. He was integral in popularizing basketball and the NBA around the world in the 1980s and 1990s,[10] becoming a global cultural icon.[11] His profile on the NBA website states, 'By acclamation, Michael Jordan is the greatest basketball player of all time.'",
+    ]
+    query = "Which member of Black Eyed Peas appeared in Poseidon?"
 
-    # retriever.build_corpus(corpus_path="./corpus/BGEM3", texts=corpus, remove_existing=True)
-    # results = retriever(query)
-    # print(results)
+    retriever.build_corpus(corpus_path="./corpus/BGEM3", texts=corpus, remove_existing=True)
+    results = retriever(query)
+    print(results)
