@@ -74,11 +74,10 @@ response = ed_model(passage)
 
 ## Knowledge Graph Question Answering (KGQA)
 
-#### KAPING (Knowledge-Augmented language model PromptING) 
-[Knowledge-Augmented Language Model Prompting for Zero-Shot Knowledge Graph Question Answering (Baek et al., NLRSE 2023)](https://aclanthology.org/2023.nlrse-1.7)
+[KAPING - Knowledge-Augmented Language Model Prompting for Zero-Shot Knowledge Graph Question Answering (Baek et al., NLRSE 2023)](https://aclanthology.org/2023.nlrse-1.7)
 
 ```python
-from okean.frameworks.kaping import KAPING
+from okean.modules.kgqa.kaping import KAPING
 from okean.modules.ranking.mpnet import MPNet
 from okean.modules.generative_llms.t5 import T5
 from okean.knowledge_base.wikidata import WikidataKG
@@ -99,22 +98,23 @@ response = kaping_model(text)
 
 ## Knowledge-Enhanced Information Retrieval (KEIR)
 
-#### KEIX (Knowledge-Enhanced Information retrieval with query understanding eXpansion) 
+[ColLUKE - Enhancing Late Interaction with Informative Entities for Passage Retrieval (Fang et al., ECIR 2024)](https://keirworkshop.github.io/assets/files/keir_4.pdf)
+
 ```python
-from okean.frameworks.keix import KEIX
-from okean.modules.retrieval.dpr import DPR
+from okean.modules.keir.colluke import ColLUKE
+from okean.modules.entity_linking.elq import ELQ
+from okean.modules.retrieval.colbert import ColBERT
 from okean.knowledge_base.wikidata import WikidataKG
-from okean.modules.entity_linking.refined import ReFinED
 
-text = "What year did Michael Jordan win his first NBA championship?"
+text = "Which member of Black Eyed Peas appeared in Poseidon?"
 
-retrieval_model = KEIX(
-  el_model=ReFinED(),
-  ir_model=DPR(document_corpus_path="<PATH_TO_CORPUS>"),
+model = ColLUKE(
+  el_model=ELQ(),
+  ir_model=ColBERT(),
   kg=WikidataKG()
 )
 
-response = retrieval_model(text)
+response = model(text)
 ```
 
 ## Training Toolkit
