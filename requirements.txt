@@ -3,5 +3,4 @@ packaging
 numpy
 tqdm
 transformers
-datasets
-sentence_transformers
+FlagEmbedding
