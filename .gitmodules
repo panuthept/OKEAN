@@ -1,0 +1,3 @@
+[submodule "src/okean/packages/bgem3_package"]
+	path = src/okean/packages/bgem3_package
+	url = https://github.com/panuthept/FlagEmbedding.git
