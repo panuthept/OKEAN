@@ -1,9 +1,7 @@
 torch
-faiss-cpu
 packaging
-numpy==1.26.4
+numpy
 tqdm
 transformers
 datasets
 sentence_transformers
-peft

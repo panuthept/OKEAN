@@ -4,7 +4,7 @@ from torch import Tensor
 from torch.functional import F
 from typing import List, Optional
 from transformers import AutoTokenizer, AutoModel
-from okean.modules.retrieval.baseclass import DenseRetriever, FaissEngineConfig
+from okean.modules.retrieval.baseclass import DenseRetriever, IndexConfig
 
 
 class DPR(DenseRetriever):
@@ -12,12 +12,13 @@ class DPR(DenseRetriever):
             self, 
             query_model_path: str = "Taekyoon/dpr_question", 
             corpus_model_path: str = "Taekyoon/dpr_context", 
-            search_config: Optional[FaissEngineConfig] = None, 
+            index_config: Optional[IndexConfig] = None, 
             corpus_path: Optional[str] = None, 
             device: Optional[str] = None,
             use_fp16: bool = True,
     ):
-        super().__init__(search_config, corpus_path)
+        if index_config is None: index_config = IndexConfig(ndim=768, metric="ip", dtype="f32")
+        super().__init__(index_config, corpus_path)
         self.device = device if device else "cuda" if torch.cuda.is_available() else "cpu"
 
         self.query_tokenizer = AutoTokenizer.from_pretrained(query_model_path)
@@ -74,8 +75,11 @@ if __name__ == "__main__":
         "Poseidon is a 2006 American action disaster film directed and co-produced by Wolfgang Petersen. It is the third film adaptation of Paul Gallico's 1969 novel The Poseidon Adventure, and a loose remake of the 1972 film. It stars Kurt Russell, Josh Lucas and Richard Dreyfuss with Emmy Rossum, Jacinda Barrett, Mike Vogel, Mía Maestro, Jimmy Bennett and Andre Braugher in supporting roles. It was produced and distributed by Warner Bros. in association with Virtual Studios. It had a simultaneous release in IMAX format. It was released on May 12, 2006, and it was criticized for its script but was praised for its visuals and was nominated at the 79th Academy Awards for Best Visual Effects.[2] It grossed $181.7 million worldwide on a budget of $160 million; however, after the costs of promotion and distribution, Warner Bros. lost $70–80 million on the film, making it a box-office bomb as a result.",
         "Michael Jeffrey Jordan (born February 17, 1963), also known by his initials MJ,[9] is an American businessman and former professional basketball player. He played fifteen seasons in the National Basketball Association (NBA) between 1984 and 2003, winning six NBA championships with the Chicago Bulls. He was integral in popularizing basketball and the NBA around the world in the 1980s and 1990s,[10] becoming a global cultural icon.[11] His profile on the NBA website states, 'By acclamation, Michael Jordan is the greatest basketball player of all time.'",
     ]
-    query = "Which member of Black Eyed Peas appeared in Poseidon?"
+    query = [
+        "Which member of Black Eyed Peas appeared in Poseidon?",
+        "Who is the greatest basketball player of all time?",
+    ]
 
-    retriever.build_corpus(corpus_path="./corpus/DPR", texts=corpus, remove_existing=True)
+    retriever.build_corpus(corpus_path="./corpus/DPR", texts=corpus, remove_existing=False)
     results = retriever(query)
     print(results)

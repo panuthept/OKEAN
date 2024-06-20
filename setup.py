@@ -13,6 +13,6 @@ setup(
     author='Panuthep Tasawong',
     author_email='panuthep.t_s20@vistec.ac.th',
     description='Open Knowledge Enhancement Applications in NLP',
-    python_requires='>=3.11',
+    python_requires='>=3.11.4',
     # install_requires=dependencies
 )

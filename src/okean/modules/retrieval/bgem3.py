@@ -5,7 +5,8 @@ from copy import deepcopy
 from typing import List, Dict, Optional
 from okean.data_types.basic_types import Passage
 from okean.modules.retrieval.baseclass import Retriever
-from okean.packages.bgem3_package.bge_m3 import BGEM3FlagModel
+# from okean.packages.bgem3_package.bge_m3 import BGEM3FlagModel
+from FlagEmbedding import BGEM3FlagModel
 
 
 class BGEM3(Retriever):
@@ -68,6 +69,8 @@ class BGEM3(Retriever):
         
         if os.path.exists(corpus_path) and remove_existing:
             print(f"Removing existing corpus at {corpus_path}.")
+            self.corpus_contents = []
+            self.corpus_embeddings = None
             shutil.rmtree(corpus_path)
 
         self.corpus_contents = texts
@@ -100,7 +103,7 @@ class BGEM3(Retriever):
 
         queries: List[str] = [passage.text for passage in passages]
         queries_embeddings = self.queries_encoding(queries, batch_size=batch_size)
-        
+
         dense_scores = np.array(queries_embeddings["dense_vecs"] @ self.corpus_embeddings["dense_vecs"].T)
         sparse_scores = np.array([[self.model.compute_lexical_matching_score(query_lexical_weights, corpus_lexical_weights) for corpus_lexical_weights in self.corpus_embeddings["lexical_weights"]] for query_lexical_weights in queries_embeddings["lexical_weights"]])
         colbert_scores = np.array([[self.model.colbert_score(query_colbert_vecs, corpus_colbert_vecs) for corpus_colbert_vecs in self.corpus_embeddings["colbert_vecs"]] for query_colbert_vecs in queries_embeddings["colbert_vecs"]])
@@ -111,7 +114,7 @@ class BGEM3(Retriever):
 
         passages = deepcopy(passages)
         for passage, scores, indices in zip(passages, scoress, indicess):
-            passage.relations = [{"relevant_passage": Passage(text=self.corpus_contents[idx], confident=score) for score, idx in zip(scores, indices)}]
+            passage.relations = [{"relevant_passage": [Passage(text=self.corpus_contents[idx], confident=score) for score, idx in zip(scores, indices)]}]
         return passages
 
 
@@ -128,6 +131,6 @@ if __name__ == "__main__":
     ]
     query = "Which member of Black Eyed Peas appeared in Poseidon?"
 
-    retriever.build_corpus(corpus_path="./corpus/BGEM3", texts=corpus, remove_existing=True)
+    retriever.build_corpus(corpus_path="./corpus/BGEM3", texts=corpus, remove_existing=False)
     results = retriever(query)
     print(results)

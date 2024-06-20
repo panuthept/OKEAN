@@ -4,19 +4,20 @@ from torch import Tensor
 from torch.functional import F
 from typing import List, Optional
 from transformers import AutoTokenizer, AutoModel
-from okean.modules.retrieval.baseclass import DenseRetriever, FaissEngineConfig
+from okean.modules.retrieval.baseclass import DenseRetriever, IndexConfig
 
 
 class mE5(DenseRetriever):
     def __init__(
             self, 
             model_path: str = "intfloat/multilingual-e5-base", 
-            search_config: Optional[FaissEngineConfig] = None, 
+            index_config: Optional[IndexConfig] = None, 
             corpus_path: Optional[str] = None, 
             device: Optional[str] = None,
             use_fp16: bool = True,
     ):
-        super().__init__(search_config, corpus_path)
+        if index_config is None: index_config = IndexConfig(ndim=768, metric="ip", dtype="f32")
+        super().__init__(index_config, corpus_path)
         self.device = device if device else "cuda" if torch.cuda.is_available() else "cpu"
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         self.model = AutoModel.from_pretrained(model_path)
@@ -63,6 +64,6 @@ if __name__ == "__main__":
     ]
     query = "Which member of Black Eyed Peas appeared in Poseidon?"
 
-    retriever.build_corpus(corpus_path="./corpus/mE5", texts=corpus, remove_existing=True)
+    retriever.build_corpus(corpus_path="./corpus/mE5", texts=corpus, remove_existing=False)
     results = retriever(query)
     print(results)
