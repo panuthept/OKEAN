@@ -41,7 +41,7 @@ class Passage(BaseDataType):
     text: str
     confident: Optional[float] = None
     entities: Optional[List[Span]] = None
-    relevant_passages: Optional[List['Passage']] = None
+    relations: Optional[List[Dict[str, Any]]] = None
 
     def __repr__(self) -> str:
         attributes = ", ".join([f"{k}='{v}'" if isinstance(v, str) else f"{k}={v}" for k, v in self.__dict__.items() if v is not None])

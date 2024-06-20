@@ -2,10 +2,10 @@ import os
 import faiss
 import shutil
 import numpy as np
-from abc import ABC
 from copy import deepcopy
 from typing import List, Optional
 from dataclasses import dataclass
+from abc import ABC, abstractmethod
 from okean.data_types.basic_types import Passage
 
 
@@ -61,7 +61,39 @@ class FaissEngine:
         return scores, indices
 
 
-class DenseRetriever(ABC):
+class Retriever(ABC):
+    @abstractmethod
+    def save_corpus(self, corpus_path: str):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def load_corpus(self, corpus_path: str):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def corpus_encoding(self, texts: List[str], batch_size: int = 8) -> np.ndarray:
+        raise NotImplementedError
+
+    @abstractmethod
+    def queries_encoding(self, texts: List[str], batch_size: int = 8) -> np.ndarray:
+        raise NotImplementedError
+    
+    @abstractmethod
+    def build_corpus(self, corpus_path: str, texts: List[str], batch_size: int = 8, remove_existing: bool = False, skip_existing: bool = True):
+        raise NotImplementedError
+    
+    @abstractmethod
+    def __call__(
+            self, 
+            texts: List[str]|str = None, 
+            passages: List[Passage]|Passage = None,
+            batch_size: int = 8,
+            k: int = 10,
+    ) -> List[Passage]:
+        raise NotImplementedError
+
+
+class DenseRetriever(Retriever):
     def __init__(self, search_config: Optional[FaissEngineConfig] = None, corpus_path: Optional[str] = None):
         self.search_config = search_config if search_config is not None else FaissEngineConfig()
 
@@ -85,12 +117,6 @@ class DenseRetriever(ABC):
             self.corpus_contents = f.read().splitlines()
         self.search_engine = FaissEngine(self.search_config)
         self.search_engine.add(self.corpus_embeddings)
-    
-    def corpus_encoding(self, texts: List[str], batch_size: int = 8) -> np.ndarray:
-        raise NotImplementedError
-
-    def queries_encoding(self, texts: List[str], batch_size: int = 8) -> np.ndarray:
-        raise NotImplementedError
 
     def build_corpus(self, corpus_path: str, texts: List[str], batch_size: int = 8, remove_existing: bool = False, skip_existing: bool = True):
         if os.path.exists(corpus_path) and not remove_existing:
@@ -137,5 +163,5 @@ class DenseRetriever(ABC):
 
         passages = deepcopy(passages)
         for passage, scores, indices in zip(passages, scoress, indicess):
-            passage.relevant_passages = [Passage(text=self.corpus_contents[idx], confident=score) for score, idx in zip(scores, indices)]
+            passage.relations = [{"relevant_passage": Passage(text=self.corpus_contents[idx], confident=score) for score, idx in zip(scores, indices)}]
         return passages
