@@ -1,6 +1,12 @@
+usearch
 torch
 packaging
+ujson
+lmdb
+unidecode
+boto3
+nltk
 numpy
 tqdm
 transformers
-FlagEmbedding
+peft

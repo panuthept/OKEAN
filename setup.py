@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 
-# with open("requirements.txt") as f:
-#     dependencies = [line for line in f]
+with open("requirements.txt") as f:
+    dependencies = [line for line in f]
 
 setup(
     name='okean',
@@ -13,6 +13,6 @@ setup(
     author='Panuthep Tasawong',
     author_email='panuthep.t_s20@vistec.ac.th',
     description='Open Knowledge Enhancement Applications in NLP',
-    python_requires='>=3.11.4',
-    # install_requires=dependencies
+    python_requires='==3.11.4',
+    install_requires=dependencies
 )

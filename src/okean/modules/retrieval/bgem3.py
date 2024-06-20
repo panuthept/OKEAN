@@ -5,8 +5,8 @@ from copy import deepcopy
 from typing import List, Dict, Optional
 from okean.data_types.basic_types import Passage
 from okean.modules.retrieval.baseclass import Retriever
-# from okean.packages.bgem3_package.bge_m3 import BGEM3FlagModel
-from FlagEmbedding import BGEM3FlagModel
+from okean.packages.bgem3_package.bge_m3 import BGEM3FlagModel
+# from FlagEmbedding import BGEM3FlagModel
 
 
 class BGEM3(Retriever):
@@ -29,12 +29,12 @@ class BGEM3(Retriever):
 
     def save_corpus(self, corpus_path: str):
         os.makedirs(corpus_path, exist_ok=True)
-        np.save(os.path.join(corpus_path, "embeddings.npy"), self.corpus_embeddings)
+        np.save(os.path.join(corpus_path, "embeddings.npy"), self.corpus_embeddings, allow_pickle=True)
         with open(os.path.join(corpus_path, "contents.txt"), "w") as f:
             f.write("\n".join(self.corpus_contents))
 
     def load_corpus(self, corpus_path: str):
-        self.corpus_embeddings = np.load(os.path.join(corpus_path, "embeddings.npy"), allow_pickle=True)
+        self.corpus_embeddings = np.load(os.path.join(corpus_path, "embeddings.npy"), allow_pickle=True).item()
         with open(os.path.join(corpus_path, "contents.txt"), "r") as f:
             self.corpus_contents = f.read().splitlines()
 
