@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, Optional
+from typing import List
 from okean.data_types.basic_types import Passage
 
 
