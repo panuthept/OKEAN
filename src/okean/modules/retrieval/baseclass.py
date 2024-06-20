@@ -118,7 +118,14 @@ class DenseRetriever(Retriever):
         self.search_engine = FaissEngine(self.search_config)
         self.search_engine.add(self.corpus_embeddings)
 
-    def build_corpus(self, corpus_path: str, texts: List[str], batch_size: int = 8, remove_existing: bool = False, skip_existing: bool = True):
+    def build_corpus(
+            self, 
+            corpus_path: str, 
+            texts: List[str], 
+            batch_size: int = 8, 
+            remove_existing: bool = False, 
+            skip_existing: bool = True
+    ):
         if os.path.exists(corpus_path) and not remove_existing:
             if skip_existing:
                 print(f"Corpus already exists at {corpus_path}. Set `remove_existing=True` to overwrite.")
@@ -154,12 +161,12 @@ class DenseRetriever(Retriever):
         if not isinstance(passages, list):
             passages = [passages]
 
-        if self.search_engine is None:
+        if self.corpus_embeddings is None:
             raise ValueError("Corpus not built. Use `build_corpus` method to build the corpus.")
 
         queries: List[str] = [passage.text for passage in passages]
-        vectors = self.queries_encoding(queries, batch_size=batch_size)
-        scoress, indicess = self.search_engine.search(vectors, k=min(k, len(self.corpus_contents)))
+        queries_embeddings = self.queries_encoding(queries, batch_size=batch_size)
+        scoress, indicess = self.search_engine.search(queries_embeddings, k=min(k, len(self.corpus_contents)))
 
         passages = deepcopy(passages)
         for passage, scores, indices in zip(passages, scoress, indicess):

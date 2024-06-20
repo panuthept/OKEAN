@@ -14,6 +14,7 @@ class mE5(DenseRetriever):
             search_config: Optional[FaissEngineConfig] = None, 
             corpus_path: Optional[str] = None, 
             device: Optional[str] = None,
+            use_fp16: bool = True,
     ):
         super().__init__(search_config, corpus_path)
         self.device = device if device else "cuda" if torch.cuda.is_available() else "cpu"
@@ -21,6 +22,7 @@ class mE5(DenseRetriever):
         self.model = AutoModel.from_pretrained(model_path)
         self.model.eval()
         self.model.to(self.device)
+        if use_fp16: self.model.half()
 
     def _average_pooling(self, last_hidden_states: Tensor, attention_mask: Tensor) -> Tensor:
         last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)

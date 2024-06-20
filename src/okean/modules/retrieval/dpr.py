@@ -15,6 +15,7 @@ class DPR(DenseRetriever):
             search_config: Optional[FaissEngineConfig] = None, 
             corpus_path: Optional[str] = None, 
             device: Optional[str] = None,
+            use_fp16: bool = True,
     ):
         super().__init__(search_config, corpus_path)
         self.device = device if device else "cuda" if torch.cuda.is_available() else "cpu"
@@ -23,11 +24,13 @@ class DPR(DenseRetriever):
         self.query_model = AutoModel.from_pretrained(query_model_path)
         self.query_model.eval()
         self.query_model.to(self.device)
+        if use_fp16: self.query_model.half()
 
         self.corpus_tokenizer = AutoTokenizer.from_pretrained(corpus_model_path)
         self.corpus_model = AutoModel.from_pretrained(corpus_model_path)
         self.corpus_model.eval()
         self.corpus_model.to(self.device)
+        if use_fp16: self.corpus_model.half()
 
     def _average_pooling(self, last_hidden_states: Tensor, attention_mask: Tensor) -> Tensor:
         last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
