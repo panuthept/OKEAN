@@ -1,5 +1,7 @@
 # OKEAN - Open Knowledge Enhancement Applications in NLP
 
+<img width="875" alt="Overview" src="https://github.com/panuthept/OKEAN/assets/28400944/58d72e99-7f05-43ba-8c63-6608507e891f">
+
 ## Basic Components
 
 ### Information Retrieval (IR)
