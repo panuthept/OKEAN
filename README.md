@@ -1,6 +1,6 @@
 # OKEAN - Open Knowledge Enhancement Applications in NLP
 
-<img width="875" alt="Overview" src="https://github.com/panuthept/OKEAN/assets/28400944/58d72e99-7f05-43ba-8c63-6608507e891f">
+<img width="875" alt="okean" src="https://github.com/panuthept/OKEAN/assets/28400944/9e1d7639-8261-4b74-a1e9-8da12146176c">
 
 ## Basic Components
 
