@@ -48,7 +48,7 @@ class DPR(DenseRetriever):
                 embeddings = self._average_pooling(outputs.last_hidden_state, inputs["attention_mask"])
                 embeddings = F.normalize(embeddings, p=2, dim=1).detach().cpu().numpy()
                 all_embeddings[i:i + batch_size] = embeddings
-        return embeddings
+        return all_embeddings
     
     def corpus_encoding(self, texts: List[str], batch_size: int = 8) -> np.ndarray:
         all_embeddings = np.zeros((len(texts), self.corpus_model.config.hidden_size), dtype=np.float32)
@@ -61,7 +61,7 @@ class DPR(DenseRetriever):
                 embeddings = self._average_pooling(outputs.last_hidden_state, inputs["attention_mask"])
                 embeddings = F.normalize(embeddings, p=2, dim=1).detach().cpu().numpy()
                 all_embeddings[i:i + batch_size] = embeddings
-        return embeddings
+        return all_embeddings
     
 
 if __name__ == "__main__":

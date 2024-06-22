@@ -9,4 +9,5 @@ nltk
 numpy
 tqdm
 transformers
+pytorch_transformers
 peft

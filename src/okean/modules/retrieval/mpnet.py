@@ -40,7 +40,7 @@ class MPNet(DenseRetriever):
                 embeddings = self._average_pooling(outputs.last_hidden_state, inputs["attention_mask"])
                 embeddings = F.normalize(embeddings, p=2, dim=1).detach().cpu().numpy()
                 all_embeddings[i:i + batch_size] = embeddings
-        return embeddings
+        return all_embeddings
 
     def queries_encoding(self, texts: List[str], batch_size: int = 8) -> np.ndarray:
         return self._encoding(texts, batch_size=batch_size)

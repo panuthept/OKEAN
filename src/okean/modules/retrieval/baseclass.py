@@ -2,25 +2,11 @@ import os
 import shutil
 import numpy as np
 from copy import deepcopy
-from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from typing import List, Optional, Union
 from okean.data_types.basic_types import Passage
-from usearch.index import Index, BatchMatches, Matches, search
-
-
-@dataclass
-class IndexConfig:
-    ndim: int
-    metric: str = "ip"
-    dtype: str = "f32"
-    connectivity: int = 16
-    expansion_add: int = 128
-    expansion_search: int = 64
-    multi: bool = False
-
-    def to_dict(self):
-        return self.__dict__
+from okean.data_types.config_types import IndexConfig
+from usearch.index import Index, BatchMatches, Matches
 
 
 class Retriever(ABC):
