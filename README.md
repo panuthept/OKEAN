@@ -2,6 +2,13 @@
 
 <img width="879" alt="okean" src="https://github.com/panuthept/OKEAN/assets/28400944/62ddb72d-e977-469c-8fde-380227724213">
 
+## Install
+```
+conda create -n okean python==3.11.4
+conda activate okean
+
+pip install -e .
+```
 
 ## Basic Components
 

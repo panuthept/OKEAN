@@ -6,7 +6,7 @@ from tqdm import tqdm
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 from okean.data_types.config_types import IndexConfig
-from usearch.index import Index, BatchMatches, Matches
+# from usearch.index import Index, BatchMatches, Matches
 from okean.data_types.basic_types import Passage, Span, Entity
 from okean.modules.entity_linking.baseclass import EntityLinking
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
@@ -76,8 +76,8 @@ class ELQ(EntityLinking):
     def _load_precomputed_entity_corpus(self, load_path: str):
         self.corpus_embeddings = np.load(os.path.join(load_path, "embeddings.npy"))
 
-        self.index = Index(**self.index_config.to_dict())
-        self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings)
+        # self.index = Index(**self.index_config.to_dict())
+        # self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings)
 
     def _tokenize_entity_corpus(self, verbose: bool = True):
         titles = [entity["name"] for entity in self.corpus_contents]
@@ -125,8 +125,8 @@ class ELQ(EntityLinking):
         os.makedirs(save_path, exist_ok=True)
         np.save(os.path.join(save_path, "embeddings.npy"), self.corpus_embeddings)
 
-        self.index = Index(**self.index_config.to_dict())
-        self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings)
+        # self.index = Index(**self.index_config.to_dict())
+        # self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings)
 
     def __call__(
             self, 
@@ -173,7 +173,6 @@ if __name__ == "__main__":
     model.precompute_entity_corpus_embeddings(
         "./data/models/entity_linking/elq_wikipedia/elq_entity_corpus", tokenized_entity_corpus=tokenized_entity_corpus, batch_size=8
     )
-
 
     # model = ELQ.from_pretrained(
     #     model_path="./data/models/entity_linking/elq_wikipedia",
