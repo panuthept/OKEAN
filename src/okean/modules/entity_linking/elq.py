@@ -11,6 +11,7 @@ from okean.data_types.basic_types import Passage, Span, Entity
 from okean.modules.entity_linking.baseclass import EntityLinking
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 from okean.packages.elq_package.biencoder.biencoder import BiEncoderRanker
+from okean.packages.elq_package.biencoder.data_process import get_candidate_representation
 
 
 @dataclass
@@ -75,18 +76,20 @@ class ELQ(EntityLinking):
         self.index = Index(**self.index_config.to_dict())
         self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings)
 
-    def _input_preprocessing(self, texts: List[str], batch_size: int = 8):
+    def _entity_preprocessing(self, titles: List[str], descs: List[str], batch_size: int = 8, verbose: bool = True):
         max_seq_len = 0
-        encoded_texts = []
-        for text in texts:
-            encoded_text = [101] + self.tokenizer.encode(text)[:self.config.max_context_length - 2] + [102]
-            max_seq_len = max(len(encoded_text), max_seq_len)
-            encoded_texts.append(encoded_text)
+        encoded_entities = []
+        for title, desc in tqdm(zip(titles, descs), total=len(titles), desc="Preprocessing entities", disable=not verbose):
+            encoded_entity = get_candidate_representation(
+                desc, self.tokenizer, self.config.max_cand_length - 2, title
+            )
+            max_seq_len = max(len(encoded_entity), max_seq_len)
+            encoded_entities.append(encoded_entity)
         # Padding
-        for i, encoded_text in enumerate(encoded_texts):
-            encoded_texts[i] = encoded_text + [0] * (max_seq_len - len(encoded_text))
+        for i, encoded_entity in enumerate(encoded_entities):
+            encoded_entities[i] = encoded_entity + [0] * (max_seq_len - len(encoded_entity))
         # Cast to tensor
-        tensor_data_tuple = [torch.tensor(encoded_texts)]
+        tensor_data_tuple = [torch.tensor(encoded_entities)]
         tensor_data = TensorDataset(*tensor_data_tuple)
         sampler = SequentialSampler(tensor_data)
         dataloader = DataLoader(
@@ -95,8 +98,9 @@ class ELQ(EntityLinking):
         return dataloader
 
     def precompute_entity_corpus(self, save_path: str, batch_size: int = 8, verbose: bool = True):
-        descs = [entity["text"] for entity in self.corpus_contents]
-        dataloader = self._input_preprocessing(descs, batch_size=batch_size)
+        titles = [entity["name"] for entity in self.corpus_contents]
+        descs = [entity["desc"] for entity in self.corpus_contents]
+        dataloader = self._entity_preprocessing(titles, descs, batch_size=batch_size, verbose=verbose)
 
         self.corpus_embeddings = np.zeros((len(descs), 768), dtype=np.float32)
         for i, batch in enumerate(tqdm(dataloader, desc="Precomputing entity corpus", disable=not verbose)):
@@ -141,7 +145,7 @@ class ELQ(EntityLinking):
 if __name__ == "__main__":
     model = ELQ(
         config=ELQConfig(
-            path_to_model="./data/models/entity_linking/elq_wikipedia/elq_wiki_large.bin",
+            path_to_model="./data/models/entity_linking/elq_wikipedia/model.bin",
             max_context_length=128,
             max_cand_length=128,
             data_parallel=False,
