@@ -43,9 +43,7 @@ class ELQ(EntityLinking):
             device: Optional[str] = None,
             use_fp16: bool = True,
     ):
-        if index_config is None: index_config = IndexConfig(ndim=768, metric="ip", dtype="f32")
         self.config = config
-        self.index_config = index_config
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else torch.device(device)
         self.max_candidates = max_candidates
 
@@ -54,6 +52,11 @@ class ELQ(EntityLinking):
         self.model.eval()
         if use_fp16: self.model.model.half()
         self.tokenizer = self.model.tokenizer
+
+        self.embeddings_dim = self.model.model.context_encoder.bert_model.config.hidden_size
+
+        if index_config is None: index_config = IndexConfig(ndim=self.embeddings_dim, metric="ip", dtype="f32")
+        self.index_config = index_config
 
         self.corpus_contents = self._load_entity_corpus(entity_corpus_path)
         self.corpus_embeddings = None
@@ -77,20 +80,15 @@ class ELQ(EntityLinking):
         self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings)
 
     def _entity_preprocessing(self, titles: List[str], descs: List[str], batch_size: int = 8, verbose: bool = True):
-        max_seq_len = 0
         encoded_entities = []
         for title, desc in tqdm(zip(titles, descs), total=len(titles), desc="Preprocessing entities", disable=not verbose):
             encoded_entity = get_candidate_representation(
-                desc, self.tokenizer, self.config.max_cand_length - 2, title
-            )
-            max_seq_len = max(len(encoded_entity), max_seq_len)
+                desc, self.tokenizer, self.config.max_cand_length, title
+            )["ids"][0]
             encoded_entities.append(encoded_entity)
-        # Padding
-        for i, encoded_entity in enumerate(encoded_entities):
-            encoded_entities[i] = encoded_entity + [0] * (max_seq_len - len(encoded_entity))
         # Cast to tensor
-        tensor_data_tuple = [torch.tensor(encoded_entities)]
-        tensor_data = TensorDataset(*tensor_data_tuple)
+        tensor_data_tuple = torch.tensor(encoded_entities)
+        tensor_data = TensorDataset(tensor_data_tuple)
         sampler = SequentialSampler(tensor_data)
         dataloader = DataLoader(
             tensor_data, sampler=sampler, batch_size=batch_size
@@ -102,18 +100,19 @@ class ELQ(EntityLinking):
         descs = [entity["desc"] for entity in self.corpus_contents]
         dataloader = self._entity_preprocessing(titles, descs, batch_size=batch_size, verbose=verbose)
 
-        self.corpus_embeddings = np.zeros((len(descs), 768), dtype=np.float32)
+        self.corpus_embeddings = np.zeros((len(descs), self.embeddings_dim), dtype=np.float32)
         for i, batch in enumerate(tqdm(dataloader, desc="Precomputing entity corpus", disable=not verbose)):
             batch = tuple(t.to(self.device) for t in batch)
             with torch.no_grad():
                 embeddings = self.model.encode_candidate(*batch).detach().cpu().numpy()
                 self.corpus_embeddings[i * batch_size: (i + 1) * batch_size] = embeddings
-
-        self.index = Index(**self.index_config.to_dict())
-        self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings)
+                break
 
         os.makedirs(save_path, exist_ok=True)
         np.save(os.path.join(save_path, "embeddings.npy"), self.corpus_embeddings)
+
+        self.index = Index(**self.index_config.to_dict())
+        self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings)
 
     def __call__(
             self, 
