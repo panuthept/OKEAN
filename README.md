@@ -1,6 +1,7 @@
 # OKEAN - Open Knowledge Enhancement Applications in NLP
 
-<img width="875" alt="okean" src="https://github.com/panuthept/OKEAN/assets/28400944/9e1d7639-8261-4b74-a1e9-8da12146176c">
+<img width="879" alt="okean" src="https://github.com/panuthept/OKEAN/assets/28400944/62ddb72d-e977-469c-8fde-380227724213">
+
 
 ## Basic Components
 
@@ -47,34 +48,28 @@ response = el_model(text)
 )
 ```
 
-### Entity Disambiguation (ED)
+## Knowledge-Enhanced Information Retrieval (KEIR)
+
+[ColLUKE - Enhancing Late Interaction with Informative Entities for Passage Retrieval (Fang et al., ECIR 2024)](https://keirworkshop.github.io/assets/files/keir_4.pdf)
+
 ```python
+from okean.modules.keir.colluke import ColLUKE
 from okean.modules.entity_linking.elq import ELQ
-from okean.modules.entity_linking.genre import GENRE
-from okean.modules.entity_linking.refined import ReFinED
-from okean.modules.entity_disambiguation.blink import BLINK
-from okean.modules.entity_disambiguation.global_ed import GlobalED
+from okean.modules.retrieval.colbert import ColBERT
+from okean.knowledge_base.wikidata import WikidataKG
 
-passage = Passage(
-  text="Which member of Black Eyed Peas appeared in Poseidon?",
-  entities=[
-    Span(start=16, end=31, text="Black Eyed Peas", entity=None),
-    Span(start=44, end=52, text="Poseidon", entity=None),
-  ]
+text = "Which member of Black Eyed Peas appeared in Poseidon?"
+
+model = ColLUKE(
+  el_model=ELQ(),
+  ir_model=ColBERT(),
+  kg=WikidataKG()
 )
 
-ed_model = BLINK()
-response = ed_model(passage)
->> Passage(
-  text="Which member of Black Eyed Peas appeared in Poseidon?",
-  entities=[
-    Span(start=16, end=31, text="Black Eyed Peas", entity=Entity(identifier="Q134541")),
-    Span(start=44, end=52, text="Poseidon", entity=Entity(identifier="Q906633")),
-  ]
-)
+response = model(text)
 ```
 
-## Knowledge Graph Question Answering (KGQA)
+## Knowledge-Base Question Answering (KBQA)
 
 [KAPING - Knowledge-Augmented Language Model Prompting for Zero-Shot Knowledge Graph Question Answering (Baek et al., NLRSE 2023)](https://aclanthology.org/2023.nlrse-1.7)
 
@@ -96,27 +91,6 @@ kaping_model = KAPING(
 
 response = kaping_model(text)
 >> Fergie
-```
-
-## Knowledge-Enhanced Information Retrieval (KEIR)
-
-[ColLUKE - Enhancing Late Interaction with Informative Entities for Passage Retrieval (Fang et al., ECIR 2024)](https://keirworkshop.github.io/assets/files/keir_4.pdf)
-
-```python
-from okean.modules.keir.colluke import ColLUKE
-from okean.modules.entity_linking.elq import ELQ
-from okean.modules.retrieval.colbert import ColBERT
-from okean.knowledge_base.wikidata import WikidataKG
-
-text = "Which member of Black Eyed Peas appeared in Poseidon?"
-
-model = ColLUKE(
-  el_model=ELQ(),
-  ir_model=ColBERT(),
-  kg=WikidataKG()
-)
-
-response = model(text)
 ```
 
 ## Training Toolkit
