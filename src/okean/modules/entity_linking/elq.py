@@ -79,29 +79,43 @@ class ELQ(EntityLinking):
         self.index = Index(**self.index_config.to_dict())
         self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings)
 
-    def _entity_preprocessing(self, titles: List[str], descs: List[str], batch_size: int = 8, verbose: bool = True):
-        encoded_entities = []
-        for title, desc in tqdm(zip(titles, descs), total=len(titles), desc="Preprocessing entities", disable=not verbose):
-            encoded_entity = get_candidate_representation(
+    def _tokenize_entity_corpus(self, verbose: bool = True):
+        titles = [entity["name"] for entity in self.corpus_contents]
+        descs = [entity["desc"] for entity in self.corpus_contents]
+
+        tokenized_entity_corpus = []
+        for title, desc in tqdm(zip(titles, descs), total=len(titles), desc="Tokenizing entities", disable=not verbose):
+            tokenized_entity = get_candidate_representation(
                 desc, self.tokenizer, self.config.max_cand_length, title
             )["ids"][0]
-            encoded_entities.append(encoded_entity)
+            tokenized_entity_corpus.append(tokenized_entity)
+        return tokenized_entity_corpus
+    
+    def precompute_entity_corpus_tokens(self, save_path: str, verbose: bool = True):
+        tokenized_entity_corpus = self._tokenize_entity_corpus(verbose=verbose)
+
+        os.makedirs(save_path, exist_ok=True)
+        torch.save(tokenized_entity_corpus, os.path.join(save_path, "tokens.pt"))
+
+    def precompute_entity_corpus_embeddings(
+            self, 
+            save_path: str, 
+            tokenized_entity_corpus: Optional[torch.Tensor] = None, 
+            batch_size: int = 8, 
+            verbose: bool = True,
+    ):
+        tokenized_entity_corpus = self._tokenize_entity_corpus(verbose=verbose) if tokenized_entity_corpus is None else tokenized_entity_corpus
+
         # Cast to tensor
-        tensor_data_tuple = torch.tensor(encoded_entities)
+        tensor_data_tuple = torch.tensor(tokenized_entity_corpus)
         tensor_data = TensorDataset(tensor_data_tuple)
         sampler = SequentialSampler(tensor_data)
         dataloader = DataLoader(
             tensor_data, sampler=sampler, batch_size=batch_size
         )
-        return dataloader
 
-    def precompute_entity_corpus(self, save_path: str, batch_size: int = 8, verbose: bool = True):
-        titles = [entity["name"] for entity in self.corpus_contents]
-        descs = [entity["desc"] for entity in self.corpus_contents]
-        dataloader = self._entity_preprocessing(titles, descs, batch_size=batch_size, verbose=verbose)
-
-        self.corpus_embeddings = np.zeros((len(descs), self.embeddings_dim), dtype=np.float32)
-        for i, batch in enumerate(tqdm(dataloader, desc="Precomputing entity corpus", disable=not verbose)):
+        self.corpus_embeddings = np.zeros((tokenized_entity_corpus.size(0), self.embeddings_dim), dtype=np.float32)
+        for i, batch in enumerate(tqdm(dataloader, desc="Precomputing entity corpus embeddings", disable=not verbose)):
             batch = tuple(t.to(self.device) for t in batch)
             with torch.no_grad():
                 embeddings = self.model.encode_candidate(*batch).detach().cpu().numpy()
@@ -127,8 +141,8 @@ class ELQ(EntityLinking):
         cls, 
         model_path: str,
         entity_corpus_path: str,
-        max_candidates: int = 30,
         precomputed_entity_corpus_path: Optional[str] = None,
+        max_candidates: int = 30,
         device: Optional[str] = None,
     ):
         config = ELQConfig(**json.load(open(f"{model_path}/config.json")))
@@ -142,15 +156,29 @@ class ELQ(EntityLinking):
     
 
 if __name__ == "__main__":
+    tokenized_entity_corpus = torch.load("./data/models/entity_linking/elq_wikipedia/elq_entity_corpus/tokens.pt")
+
     model = ELQ(
         config=ELQConfig(
-            path_to_model="./data/models/entity_linking/elq_wikipedia/model.bin",
-            max_context_length=128,
-            max_cand_length=128,
-            data_parallel=False,
-            no_cuda=False,
+            bert_model = "bert-large-uncased",
+            path_to_model = "./data/models/entity_linking/elq_wikipedia/model.bin",
+            max_context_length = 128,
+            max_cand_length = 128,
+            data_parallel = False,
+            no_cuda = False,
         ),
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
+        precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
     )
-    model.precompute_entity_corpus("./data/models/entity_linking/elq_wikipedia/elq_entity_corpus", batch_size=8)
-    print(model)
+    model.precompute_entity_corpus_embeddings(
+        "./data/models/entity_linking/elq_wikipedia/elq_entity_corpus", tokenized_entity_corpus=tokenized_entity_corpus, batch_size=8
+    )
+
+
+    # model = ELQ.from_pretrained(
+    #     model_path="./data/models/entity_linking/elq_wikipedia",
+    #     entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
+    #     precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
+    #     max_candidates=30,
+    #     device="cuda",
+    # )
