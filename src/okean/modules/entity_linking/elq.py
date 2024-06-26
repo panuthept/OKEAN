@@ -53,9 +53,9 @@ class ELQ(EntityLinking):
         if use_fp16: self.model.model.half()
         self.tokenizer = self.model.tokenizer
 
-        self.embeddings_dim = self.model.model.context_encoder.bert_model.config.hidden_size
+        # self.embeddings_dim = self.model.model.context_encoder.bert_model.config.hidden_size
 
-        if index_config is None: index_config = IndexConfig(ndim=self.embeddings_dim, metric="ip", dtype="f32")
+        if index_config is None: index_config = IndexConfig(ndim=128, metric="ip", dtype="f32")
         self.index_config = index_config
 
         self.corpus_contents = self._load_entity_corpus(entity_corpus_path)
@@ -114,7 +114,7 @@ class ELQ(EntityLinking):
             tensor_data, sampler=sampler, batch_size=batch_size
         )
 
-        self.corpus_embeddings = np.zeros((tokenized_entity_corpus.size(0), self.embeddings_dim), dtype=np.float32)
+        self.corpus_embeddings = np.zeros((tokenized_entity_corpus.size(0), 128), dtype=np.float32)
         for i, batch in enumerate(tqdm(dataloader, desc="Precomputing entity corpus embeddings", disable=not verbose)):
             batch = tuple(t.to(self.device) for t in batch)
             with torch.no_grad():
