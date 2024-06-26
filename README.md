@@ -1,7 +1,5 @@
 # OKEAN - Open Knowledge Enhancement Applications in NLP
 
-<img width="879" alt="okean" src="https://github.com/panuthept/OKEAN/assets/28400944/62ddb72d-e977-469c-8fde-380227724213">
-
 ## Install
 ```
 conda create -n okean python==3.11.4
@@ -17,13 +15,14 @@ pip install -e .
 ```python
 from okean.modules.retrieval.elq import mE5
 
-corpus = [
-  ...
-]
 text = "Which member of Black Eyed Peas appeared in Poseidon?"
 
-ir_model = mE5()
-ir_model.build_corpus(corpus_path="<PATH_TO_CORPUS>", texts=corpus)
+ir_model = mE5.from_pretrained(
+  model_path="<PATH_TO_MODEL>",
+  text_corpus_path="<PATH_TO_CORPUS>",
+  precomputed_text_corpus_path="<PATH_TO_PRECOMPUTED_CORPUS>",
+)
+
 response = ir_model(text)
 >> Passage(
   text="Which member of Black Eyed Peas appeared in Poseidon?",
@@ -44,7 +43,12 @@ from okean.modules.entity_linking.refined import ReFinED
 
 text = "Which member of Black Eyed Peas appeared in Poseidon?"
 
-el_model = ELQ()
+el_model = ELQ.from_pretrained(
+  model_path="<PATH_TO_MODEL>",
+  entity_corpus_path="<PATH_TO_CORPUS>",
+  precomputed_entity_corpus_path="<PATH_TO_PRECOMPUTED_CORPUS>",
+)
+
 response = el_model(text)
 >> Passage(
   text="Which member of Black Eyed Peas appeared in Poseidon?",
