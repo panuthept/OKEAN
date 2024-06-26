@@ -5,6 +5,14 @@
 conda create -n okean python==3.11.4
 conda activate okean
 
+# Select the appropriate PyTorch version based on your CUDA version
+# CUDA 11.8
+conda install pytorch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 pytorch-cuda=11.8 -c pytorch -c nvidia
+# CUDA 12.1
+conda install pytorch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 pytorch-cuda=12.1 -c pytorch -c nvidia
+# CPU Only
+conda install pytorch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 cpuonly -c pytorch
+
 pip install -e .
 ```
 

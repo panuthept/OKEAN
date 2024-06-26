@@ -119,6 +119,7 @@ class ELQ(EntityLinking):
             batch = tuple(t.to(self.device) for t in batch)
             with torch.no_grad():
                 embeddings = self.model.encode_candidate(*batch).detach().cpu()
+                print(embeddings.size())
                 self.corpus_embeddings[i * batch_size: (i + 1) * batch_size] = embeddings
                 break
 
