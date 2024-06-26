@@ -120,7 +120,6 @@ class ELQ(EntityLinking):
             with torch.no_grad():
                 embeddings = self.model.encode_candidate(*batch).detach().cpu()
                 self.corpus_embeddings[i * batch_size: (i + 1) * batch_size] = embeddings
-                break
 
         os.makedirs(save_path, exist_ok=True)
         torch.save(self.corpus_embeddings, os.path.join(save_path, "embeddings.pt"))
