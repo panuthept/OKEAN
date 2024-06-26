@@ -168,7 +168,7 @@ if __name__ == "__main__":
             no_cuda = False,
         ),
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
-        precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
+        # precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
     )
     model.precompute_entity_corpus_embeddings(
         "./data/models/entity_linking/elq_wikipedia/elq_entity_corpus", tokenized_entity_corpus=tokenized_entity_corpus, batch_size=8
