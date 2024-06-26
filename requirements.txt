@@ -1,5 +1,5 @@
 usearch
-torch
+# torch
 packaging
 ujson
 lmdb
