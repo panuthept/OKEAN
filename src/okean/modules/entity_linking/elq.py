@@ -114,16 +114,17 @@ class ELQ(EntityLinking):
             tensor_data, sampler=sampler, batch_size=batch_size
         )
 
-        self.corpus_embeddings = np.zeros((tokenized_entity_corpus.size(0), 128), dtype=np.float32)
+        self.corpus_embeddings = torch.zeros(tokenized_entity_corpus.size(0), 128, dtype=torch.float32)
         for i, batch in enumerate(tqdm(dataloader, desc="Precomputing entity corpus embeddings", disable=not verbose)):
             batch = tuple(t.to(self.device) for t in batch)
             with torch.no_grad():
-                embeddings = self.model.encode_candidate(*batch).detach().cpu().numpy()
+                embeddings = self.model.encode_candidate(*batch).detach().cpu()
                 self.corpus_embeddings[i * batch_size: (i + 1) * batch_size] = embeddings
                 break
 
         os.makedirs(save_path, exist_ok=True)
-        np.save(os.path.join(save_path, "embeddings.npy"), self.corpus_embeddings)
+        torch.save(self.corpus_embeddings, os.path.join(save_path, "embeddings.pt"))
+        # np.save(os.path.join(save_path, "embeddings.npy"), self.corpus_embeddings)
 
         self.index = Index(**self.index_config.to_dict())
         self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings)
