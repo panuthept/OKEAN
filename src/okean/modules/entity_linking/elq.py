@@ -152,7 +152,7 @@ class ELQ(EntityLinking):
         max_seq_len = 0
         encoded_samples = []
         for passage in passages:
-            tokenized_output = self.tokenizer(passage.text, return_offsets_mapping=True)
+            tokenized_output = self.tokenizer.encode(passage.text, return_offsets_mapping=True)
             print(f"tokenized_output:\n{tokenized_output}")
             encoded_sample = [101] + self.tokenizer.encode(passage.text)[:self.config.max_context_length - 2] + [102]
             max_seq_len = max(len(encoded_sample), max_seq_len)
