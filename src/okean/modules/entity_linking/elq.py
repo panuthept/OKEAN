@@ -1,4 +1,5 @@
 import os
+import copy
 import json
 import torch
 import numpy as np
@@ -151,6 +152,8 @@ class ELQ(EntityLinking):
         max_seq_len = 0
         encoded_samples = []
         for passage in passages:
+            tokenized_output = self.tokenizer(passage.text, return_offsets_mapping=True)
+            print(f"tokenized_output:\n{tokenized_output}")
             encoded_sample = [101] + self.tokenizer.encode(passage.text)[:self.config.max_context_length - 2] + [102]
             max_seq_len = max(len(encoded_sample), max_seq_len)
             encoded_samples.append(encoded_sample)
@@ -178,12 +181,13 @@ class ELQ(EntityLinking):
             passages: List[Passage]|Passage = None,
             batch_size: int = 8,
     ) -> List[Passage]:
-        passages = texts_to_passages(texts=texts, passages=passages)
+        passages: List[Passage] = texts_to_passages(texts=texts, passages=passages)
         
         # Prepare input data
         dataloader = self._input_preprocessing(passages=passages, batch_size=batch_size)
 
         # Inference
+        output_passages = copy.deepcopy(passages)
         for batch in dataloader:
             batch = tuple(t.to(self.device) for t in batch)
             context_input = batch[0]
@@ -253,24 +257,45 @@ class ELQ(EntityLinking):
 
                 _, sorted_indices = pred_combined_scores.sort(descending=True)
 
-                final_cand_logits = []
-                final_cand_indices = []
-                final_mention_bounds = []
+                # final_cand_logits = []
+                # final_cand_indices = []
+                # final_mention_bounds = []
                 pred_tokens_mask = torch.zeros_like(context_input)
+                # Remove special tokens [CLS] and [SEP]
+                context_input = context_input[:, 1:-1]
                 print(f"sorted_indices:\n{sorted_indices}\n{sorted_indices.size()}")
                 for idx in sorted_indices:
-                    if pred_tokens_mask[pred_mention_masks[0][idx], pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]].sum() >= 1:
+                    passage_idx = pred_mention_masks[0][idx]
+                    if pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]].sum() >= 1:
                         continue
-                    final_cand_logits.append(pred_cand_logits[idx])
-                    final_cand_indices.append(pred_cand_indices[idx])
-                    final_mention_bounds.append(pred_mention_bounds[idx])
-                    pred_tokens_mask[pred_mention_masks[0][idx], pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]] = 1
-                final_cand_logits = torch.stack(final_cand_logits)
-                final_cand_indices = torch.stack(final_cand_indices)
-                final_mention_bounds = torch.stack(final_mention_bounds)
-                print(f"final_cand_logits:\n{final_cand_logits}\n{final_cand_logits.size()}")
-                print(f"final_cand_indices:\n{final_cand_indices}\n{final_cand_indices.size()}")
-                print(f"final_mention_bounds:\n{final_mention_bounds}\n{final_mention_bounds.size()}")
+                    # final_cand_logits.append(pred_cand_logits[idx])
+                    # final_cand_indices.append(pred_cand_indices[idx])
+                    # final_mention_bounds.append(pred_mention_bounds[idx])
+                    # span_start =  # Map to original character index
+                    output_passages[passage_idx].entities.append(
+                        Span(
+                            start=pred_mention_bounds[idx][0], 
+                            end=pred_mention_bounds[idx][1],
+                            surface_form=self.tokenizer.decode(context_input[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]]),
+                            candidates=[
+                                Entity(
+                                    identifier=self.corpus_contents[pred_cand_indices[idx][0]]["id"],
+                                    confident=pred_cand_logits[idx][0],
+                                    metadata=self.corpus_contents[pred_cand_indices[idx][0]],
+                                )
+                            ]
+                        )
+                    )
+                    pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]] = 1
+                # final_cand_logits = torch.stack(final_cand_logits)
+                # final_cand_indices = torch.stack(final_cand_indices)
+                # final_mention_bounds = torch.stack(final_mention_bounds)
+                # print(f"final_cand_logits:\n{final_cand_logits}\n{final_cand_logits.size()}")
+                # print(f"final_cand_indices:\n{final_cand_indices}\n{final_cand_indices.size()}")
+                # print(f"final_mention_bounds:\n{final_mention_bounds}\n{final_mention_bounds.size()}")
+
+                # Remove special tokens [CLS] and [SEP]
+                context_input = context_input[:, 1:-1]
                 
 
 
