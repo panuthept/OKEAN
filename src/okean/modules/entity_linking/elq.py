@@ -239,7 +239,8 @@ class ELQ(EntityLinking):
                 print(f"combined_scores:\n{combined_scores}\n{combined_scores.size()}")
 
                 # (batch_size, num_pred_mentions)
-                pred_mention_masks = (mention_logits > 0)
+                pred_mention_masks = (mention_logits > 0).reshape(mention_logits.size(0), -1)
+                print(f"pred_mention_masks:\n{pred_mention_masks}\n{pred_mention_masks.size()}")
                 pred_mention_bounds = mention_bounds[pred_mention_masks]
                 pred_combined_scores = combined_scores[pred_mention_masks]
                 # (batch_size, num_pred_mentions, max_candidates)
