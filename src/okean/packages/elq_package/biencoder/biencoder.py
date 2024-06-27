@@ -18,7 +18,8 @@ from pytorch_transformers.modeling_bert import (
     BertModel,
 )
 
-from pytorch_transformers.tokenization_bert import BertTokenizer
+# from pytorch_transformers.tokenization_bert import BertTokenizer
+from transformers import BertTokenizerFast
 
 from okean.packages.elq_package.common.ranker_base import BertEncoder, get_model_obj
 from okean.packages.elq_package.common.optimizer import get_bert_optimizer
@@ -558,7 +559,7 @@ class BiEncoderRanker(torch.nn.Module):
         self.NULL_IDX = 0
         self.START_TOKEN = "[CLS]"
         self.END_TOKEN = "[SEP]"
-        self.tokenizer = BertTokenizer.from_pretrained(
+        self.tokenizer = BertTokenizerFast.from_pretrained(
             params["bert_model"], do_lower_case=params["lowercase"]
         )
         # init model

@@ -151,12 +151,13 @@ class ELQ(EntityLinking):
         # Tokenize samples
         max_seq_len = 0
         encoded_samples = []
+        offset_mappings = []
         for passage in passages:
-            tokenized_output = self.tokenizer.encode(passage.text, return_offsets_mapping=True)
-            print(f"tokenized_output:\n{tokenized_output}")
-            encoded_sample = [101] + self.tokenizer.encode(passage.text)[:self.config.max_context_length - 2] + [102]
+            tokenizer_output = self.tokenizer(passage.text, return_offsets_mapping=True)
+            encoded_sample = [101] + tokenizer_output["input_ids"][:self.config.max_context_length - 2] + [102]
             max_seq_len = max(len(encoded_sample), max_seq_len)
             encoded_samples.append(encoded_sample)
+            offset_mappings.append(tokenizer_output["offset_mapping"])
         print(encoded_samples)
 
         # Pad samples
@@ -173,7 +174,7 @@ class ELQ(EntityLinking):
         dataloader = DataLoader(
             tensor_data, sampler=sampler, batch_size=batch_size
         )
-        return dataloader
+        return dataloader, offset_mappings
 
     def __call__(
             self, 
@@ -184,7 +185,7 @@ class ELQ(EntityLinking):
         passages: List[Passage] = texts_to_passages(texts=texts, passages=passages)
         
         # Prepare input data
-        dataloader = self._input_preprocessing(passages=passages, batch_size=batch_size)
+        dataloader, offset_mappings = self._input_preprocessing(passages=passages, batch_size=batch_size)
 
         # Inference
         output_passages = copy.deepcopy(passages)
@@ -274,19 +275,20 @@ class ELQ(EntityLinking):
                     # span_start =  # Map to original character index
                     output_passages[passage_idx].entities.append(
                         Span(
-                            start=pred_mention_bounds[idx][0], 
-                            end=pred_mention_bounds[idx][1],
+                            start=offset_mappings[passage_idx][pred_mention_bounds[idx][0]][0],
+                            end=offset_mappings[passage_idx][pred_mention_bounds[idx][1]][1],
                             surface_form=self.tokenizer.decode(context_input[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]]),
-                            candidates=[
+                            entities=[
                                 Entity(
-                                    identifier=self.corpus_contents[pred_cand_indices[idx][0]]["id"],
-                                    confident=pred_cand_logits[idx][0],
-                                    metadata=self.corpus_contents[pred_cand_indices[idx][0]],
+                                    identifier=pred_cand_indices[idx][cand_idx],
+                                    confident=pred_cand_logits[idx][cand_idx],
+                                    metadata=self.corpus_contents[pred_cand_indices[idx][cand_idx]],
                                 )
-                            ]
+                            for cand_idx in range(self.max_candidates)]
                         )
                     )
                     pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]] = 1
+                print(f"output_passages:\n{output_passages}")
                 # final_cand_logits = torch.stack(final_cand_logits)
                 # final_cand_indices = torch.stack(final_cand_indices)
                 # final_mention_bounds = torch.stack(final_mention_bounds)
@@ -295,7 +297,7 @@ class ELQ(EntityLinking):
                 # print(f"final_mention_bounds:\n{final_mention_bounds}\n{final_mention_bounds.size()}")
 
                 # Remove special tokens [CLS] and [SEP]
-                context_input = context_input[:, 1:-1]
+                # context_input = context_input[:, 1:-1]
                 
 
 
