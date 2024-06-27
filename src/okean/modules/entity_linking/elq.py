@@ -235,7 +235,7 @@ class ELQ(EntityLinking):
                 top_cand_indices[mention_masks] = top_cand_indices_shape
 
                 # (batch_size, num_mentions, max_candidates)
-                scores = torch.log_softmax(top_cand_logits, -1) + torch.sigmoid(mention_logits.unsqueeze(-1)).log()
+                scores = torch.log_softmax(top_cand_logits, -1)[:, :, 0] + torch.sigmoid(mention_logits).log()
                 print(f"scores:\n{scores}\n{scores.size()}")
                 
 
