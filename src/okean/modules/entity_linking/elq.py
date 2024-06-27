@@ -193,8 +193,8 @@ class ELQ(EntityLinking):
                 embeddings = self.model.encode_context(context_input)
                 mention_embeddings = embeddings["mention_reps"]
                 mention_masks = embeddings["mention_masks"]
-                mention_logits = embeddings["mention_logits"]
-                mention_bounds = embeddings["mention_bounds"]
+                mention_logits = embeddings["mention_logits"]   # (batch_size, num_mentions)
+                mention_bounds = embeddings["mention_bounds"]   # (batch_size, num_mentions, 2)
 
                 # Get mention embeddings
                 mention_embeddings = mention_embeddings[mention_masks]
@@ -238,9 +238,9 @@ class ELQ(EntityLinking):
                 combined_scores = torch.log_softmax(top_cand_logits, -1)[:, :, 0] + torch.sigmoid(mention_logits).log()
                 print(f"combined_scores:\n{combined_scores}\n{combined_scores.size()}")
 
-                # (batch_size, num_pred_mentions)
                 pred_mention_masks = (mention_logits > 0).nonzero(as_tuple=True)
                 print(f"pred_mention_masks:\n{pred_mention_masks}")
+                # (batch_size, num_pred_mentions)
                 pred_mention_bounds = mention_bounds[pred_mention_masks]
                 pred_combined_scores = combined_scores[pred_mention_masks]
                 # (batch_size, num_pred_mentions, max_candidates)
@@ -250,6 +250,12 @@ class ELQ(EntityLinking):
                 print(f"pred_combined_scores:\n{pred_combined_scores}\n{pred_combined_scores.size()}")
                 print(f"pred_cand_logits:\n{pred_cand_logits}\n{pred_cand_logits.size()}")
                 print(f"pred_cand_indices:\n{pred_cand_indices}\n{pred_cand_indices.size()}")
+
+                pred_tokens_mask = torch.zeros_like(context_input)
+                _, sorted_indices = pred_combined_scores.sort(descending=True)
+                print(f"sorted_indices:\n{sorted_indices}\n{sorted_indices.size()}")
+                # for idx in sorted_indices:
+                #     pass
                 
 
 
