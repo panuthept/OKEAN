@@ -234,9 +234,12 @@ class ELQ(EntityLinking):
                 ).to(self.device, top_cand_indices_shape.dtype)
                 top_cand_indices[mention_masks] = top_cand_indices_shape
 
-                # (batch_size, num_mentions, max_candidates)
+                # (batch_size, num_mentions)
                 scores = torch.log_softmax(top_cand_logits, -1)[:, :, 0] + torch.sigmoid(mention_logits).log()
                 print(f"scores:\n{scores}\n{scores.size()}")
+
+                chosen_mention_indices = mention_bounds[(mention_logits > 0)]
+                print(f"chosen_mention_indices:\n{chosen_mention_indices}\n{chosen_mention_indices.size()}")
                 
 
 
