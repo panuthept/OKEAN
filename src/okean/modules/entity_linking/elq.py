@@ -192,10 +192,10 @@ class ELQ(EntityLinking):
                 print(context_input)
 
                 embeddings = self.model.encode_context(context_input)
-                mention_embeddings = embeddings["mention_reps"].detach().cpu()
-                mention_masks = embeddings["mention_masks"].detach().cpu()
-                mention_logits = embeddings["mention_logits"].detach().cpu()
-                mention_bounds = embeddings["mention_bounds"].detach().cpu()
+                mention_embeddings = embeddings["mention_reps"]
+                mention_masks = embeddings["mention_masks"]
+                mention_logits = embeddings["mention_logits"]
+                mention_bounds = embeddings["mention_bounds"]
 
                 # Get mention embeddings
                 mention_embeddings = mention_embeddings[mention_masks]
