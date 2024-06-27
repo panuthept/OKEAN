@@ -77,7 +77,7 @@ class ELQ(EntityLinking):
         self.corpus_embeddings = np.load(os.path.join(load_path, "embeddings.npy"))
 
         self.index = Index(**self.index_config.to_dict())
-        self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings)
+        self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings.numpy())
 
     def _tokenize_entity_corpus(self, verbose: bool = True):
         titles = [entity["name"] for entity in self.corpus_contents]
@@ -126,7 +126,7 @@ class ELQ(EntityLinking):
         # np.save(os.path.join(save_path, "embeddings.npy"), self.corpus_embeddings)
 
         self.index = Index(**self.index_config.to_dict())
-        self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings)
+        self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings.numpy())
 
     def __call__(
             self, 
