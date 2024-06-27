@@ -238,8 +238,13 @@ class ELQ(EntityLinking):
                 scores = torch.log_softmax(top_cand_logits, -1)[:, :, 0] + torch.sigmoid(mention_logits).log()
                 print(f"scores:\n{scores}\n{scores.size()}")
 
-                chosen_mention_indices = mention_bounds[(mention_logits > 0)]
-                print(f"chosen_mention_indices:\n{chosen_mention_indices}\n{chosen_mention_indices.size()}")
+                # (batch_size, num_pred_mentions)
+                pred_mention_bounds = mention_bounds[(mention_logits > 0)]
+                pred_cand_logits = top_cand_logits[(mention_logits > 0)]
+                pred_cand_indices = top_cand_indices[(mention_logits > 0)]
+                print(f"pred_mention_bounds:\n{pred_mention_bounds}\n{pred_mention_bounds.size()}")
+                print(f"pred_cand_logits:\n{pred_cand_logits}\n{pred_cand_logits.size()}")
+                print(f"pred_cand_indices:\n{pred_cand_indices}\n{pred_cand_indices.size()}")
                 
 
 
