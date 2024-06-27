@@ -251,11 +251,26 @@ class ELQ(EntityLinking):
                 print(f"pred_cand_logits:\n{pred_cand_logits}\n{pred_cand_logits.size()}")
                 print(f"pred_cand_indices:\n{pred_cand_indices}\n{pred_cand_indices.size()}")
 
-                pred_tokens_mask = torch.zeros_like(context_input)
                 _, sorted_indices = pred_combined_scores.sort(descending=True)
+
+                final_cand_logits = []
+                final_cand_indices = []
+                final_mention_bounds = []
+                pred_tokens_mask = torch.zeros_like(context_input)
                 print(f"sorted_indices:\n{sorted_indices}\n{sorted_indices.size()}")
-                # for idx in sorted_indices:
-                #     pass
+                for idx in sorted_indices:
+                    if pred_tokens_mask[pred_mention_masks[0][idx], pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]].sum() >= 1:
+                        continue
+                    final_cand_logits.append(pred_cand_logits[idx])
+                    final_cand_indices.append(pred_cand_indices[idx])
+                    final_mention_bounds.append(pred_mention_bounds[idx])
+                    pred_tokens_mask[pred_mention_masks[0][idx], pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]] = 1
+                final_cand_logits = torch.stack(final_cand_logits)
+                final_cand_indices = torch.stack(final_cand_indices)
+                final_mention_bounds = torch.stack(final_mention_bounds)
+                print(f"final_cand_logits:\n{final_cand_logits}\n{final_cand_logits.size()}")
+                print(f"final_cand_indices:\n{final_cand_indices}\n{final_cand_indices.size()}")
+                print(f"final_mention_bounds:\n{final_mention_bounds}\n{final_mention_bounds.size()}")
                 
 
 
