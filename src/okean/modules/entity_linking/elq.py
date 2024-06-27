@@ -296,8 +296,11 @@ if __name__ == "__main__":
     )
     # model.precompute_entity_corpus_index(save_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus")
 
-    text = "Barack Obama is the former president of the United States."
-    model(texts=text)
+    texts = [
+        "Barack Obama is the former president of the United States.",
+        "The Eiffel Tower is located in Paris.",
+    ]
+    model(texts=texts)
     # model = ELQ.from_pretrained(
     #     model_path="./data/models/entity_linking/elq_wikipedia",
     #     entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
