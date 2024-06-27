@@ -190,7 +190,6 @@ class ELQ(EntityLinking):
             with torch.no_grad():
                 # Encode input text
                 print(context_input)
-
                 embeddings = self.model.encode_context(context_input)
                 mention_embeddings = embeddings["mention_reps"]
                 mention_masks = embeddings["mention_masks"]
@@ -199,17 +198,10 @@ class ELQ(EntityLinking):
 
                 # Get mention embeddings
                 mention_embeddings = mention_embeddings[mention_masks]
-                # print(f"mention_embeddings:\n{mention_embeddings}\n{mention_embeddings.size()}")
-                # print(f"mention_masks:\n{mention_masks}\n{mention_masks.size()}")
-                # print(f"mention_logits:\n{mention_logits}\n{mention_logits.size()}")
-                # print(f"mention_bounds:\n{mention_bounds}\n{mention_bounds.size()}")
-
-                # all_scores, _, _ = self.model.score_candidate(
-                #     context_input, None, text_encs=mention_embeddings, cand_encs=self.corpus_embeddings.to(self.device)
-                # )
-                # print(f"all_scores:\n{all_scores}\n{all_scores.size()}")
-                # print(f"mention_logits:\n{mention_logits}\n{mention_logits.size()}")
-                # print(f"mention_bounds:\n{mention_bounds}\n{mention_bounds.size()}")
+                print(f"mention_embeddings:\n{mention_embeddings}\n{mention_embeddings.size()}")
+                print(f"mention_masks:\n{mention_masks}\n{mention_masks.size()}")
+                print(f"mention_logits:\n{mention_logits}\n{mention_logits.size()}")
+                print(f"mention_bounds:\n{mention_bounds}\n{mention_bounds.size()}")
 
                 # Retrieve candidates
                 if self.index is None:
@@ -230,10 +222,22 @@ class ELQ(EntityLinking):
                 print(f"top_cand_logits_shape:\n{top_cand_logits_shape}\n{top_cand_logits_shape.size()}")
                 print(f"top_cand_indices_shape:\n{top_cand_indices_shape}\n{top_cand_indices_shape.size()}")
 
-                # top_cand_logits = torch.zeros(
-                #     mention_logits.size(0), mention_logits.size(1), top_cand_logits_shape.size(-1)
-                # ).to(top_cand_logits_shape.device, top_cand_logits_shape.dtype)
-                # print([(match.distances, match.keys) for match in matches])
+                # (batch_size, num_mentions, max_candidates)
+                top_cand_logits = torch.zeros(
+                    mention_logits.size(0), mention_logits.size(1), self.max_candidates
+                ).to(self.device, top_cand_logits_shape.dtype)
+                top_cand_logits[mention_masks] = top_cand_logits_shape
+
+                # (batch_size, num_mentions, max_candidates)
+                top_cand_indices = torch.zeros(
+                    mention_logits.size(0), mention_logits.size(1), self.max_candidates
+                ).to(self.device, top_cand_indices_shape.dtype)
+                top_cand_indices[mention_masks] = top_cand_indices_shape
+
+                # (batch_size, num_mentions, max_candidates)
+                scores = torch.log_softmax(top_cand_logits, -1) + torch.sigmoid(mention_logits.unsqueeze(-1)).log()
+                print(f"scores:\n{scores}\n{scores.size()}")
+                
 
 
     @classmethod
