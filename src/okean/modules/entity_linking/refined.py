@@ -45,12 +45,14 @@ class ReFinED(EntityLinking):
             self, 
             texts: List[str]|str = None, 
             passages: List[Passage]|Passage = None,
+            batch_size: int = 8,
     ) -> List[Passage]:
         passages = super().__call__(texts=texts, passages=passages)
 
         _docs: List[_Doc] = self.refined.process_text_batch(
             texts=[d.text for d in passages],
             spanss=[[_Span(text=span.surface_form, start=span.start, ln=span.end - span.start) for span in d.entities] for d in passages] if passages[0].entities is not None else None,
+            max_batch_size=batch_size,
         )
 
         # Post-process to convert ReFinED object (`_docs`) to standard object (`passages`)
