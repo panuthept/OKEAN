@@ -1,6 +1,0 @@
-[submodule "src/okean/packages/bgem3_package"]
-	path = src/okean/packages/bgem3_package
-	url = https://github.com/panuthept/FlagEmbedding.git
-[submodule "src/okean/packages/elq_package"]
-	path = src/okean/packages/elq_package
-	url = https://github.com/panuthept/ELQ.git
