@@ -235,14 +235,18 @@ class ELQ(EntityLinking):
                 top_cand_indices[mention_masks] = top_cand_indices_shape
 
                 # (batch_size, num_mentions)
-                scores = torch.log_softmax(top_cand_logits, -1)[:, :, 0] + torch.sigmoid(mention_logits).log()
-                print(f"scores:\n{scores}\n{scores.size()}")
+                combined_scores = torch.log_softmax(top_cand_logits, -1)[:, :, 0] + torch.sigmoid(mention_logits).log()
+                print(f"combined_scores:\n{combined_scores}\n{combined_scores.size()}")
 
                 # (batch_size, num_pred_mentions)
-                pred_mention_bounds = mention_bounds[(mention_logits > 0)]
-                pred_cand_logits = top_cand_logits[(mention_logits > 0)]
-                pred_cand_indices = top_cand_indices[(mention_logits > 0)]
+                pred_mention_masks = (mention_logits > 0)
+                pred_mention_bounds = mention_bounds[pred_mention_masks]
+                pred_combined_scores = combined_scores[pred_mention_masks]
+                # (batch_size, num_pred_mentions, max_candidates)
+                pred_cand_logits = top_cand_logits[pred_mention_masks]
+                pred_cand_indices = top_cand_indices[pred_mention_masks]
                 print(f"pred_mention_bounds:\n{pred_mention_bounds}\n{pred_mention_bounds.size()}")
+                print(f"pred_combined_scores:\n{pred_combined_scores}\n{pred_combined_scores.size()}")
                 print(f"pred_cand_logits:\n{pred_cand_logits}\n{pred_cand_logits.size()}")
                 print(f"pred_cand_indices:\n{pred_cand_indices}\n{pred_cand_indices.size()}")
                 
