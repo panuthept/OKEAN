@@ -59,12 +59,14 @@ el_model = ELQ.from_pretrained(
 
 response = el_model(text)
 print(response.passages)
->> Passage(
-  text="Which member of Black Eyed Peas appeared in Poseidon?",
-  entities=[
-    Span(start=16, end=31, surface_form="Black Eyed Peas", confident=0.5956, entity=Entity(identifier=110826, confident=1.0, metadata={'id': {'wikipedia': '210453', 'wikidata': 'Q134541'}})),
-  ]
-)
+>> [
+  Passage(
+    text="Which member of Black Eyed Peas appeared in Poseidon?",
+    entities=[
+      Span(start=16, end=31, surface_form="Black Eyed Peas", confident=0.5956, entity=Entity(identifier=110826, confident=1.0, metadata={'id': {'wikipedia': '210453', 'wikidata': 'Q134541'}})),
+    ]
+  )
+]
 ```
 
 ## Knowledge-Enhanced Information Retrieval (KEIR)
