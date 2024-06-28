@@ -5,7 +5,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Optional, Union
 from okean.data_types.config_types import IndexConfig
 from okean.utilities.readers import load_entity_corpus
 from usearch.index import Index, BatchMatches, Matches, search
@@ -250,8 +250,8 @@ class ELQ(EntityLinking):
                 top_cand_logits_shape = torch.zeros(len(matches), self.max_candidates, dtype=torch.float32, device=self.device)
                 top_cand_indices_shape = torch.zeros(len(matches), self.max_candidates, dtype=torch.int32, device=self.device)
                 for i, match in enumerate(matches):
-                    top_cand_logits_shape[i] = match.distances.astype(np.float32)
-                    top_cand_indices_shape[i] = match.keys.astype(np.int32)
+                    top_cand_logits_shape[i] = match.distances.tolist()
+                    top_cand_indices_shape[i] = match.keys.tolist()
                 
                 # (batch_size, num_mentions, max_candidates)
                 top_cand_logits = torch.zeros(
