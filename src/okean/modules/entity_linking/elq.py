@@ -273,6 +273,8 @@ class ELQ(EntityLinking):
                     # final_cand_indices.append(pred_cand_indices[idx])
                     # final_mention_bounds.append(pred_mention_bounds[idx])
                     # span_start =  # Map to original character index
+                    if output_passages[passage_idx].entities is None:
+                        output_passages[passage_idx].entities = []
                     output_passages[passage_idx].entities.append(
                         Span(
                             start=offset_mappings[passage_idx][pred_mention_bounds[idx][0]][0],
