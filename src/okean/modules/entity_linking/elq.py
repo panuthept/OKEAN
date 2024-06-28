@@ -292,8 +292,6 @@ class ELQ(EntityLinking):
                 _, sorted_indices = pred_combined_scores.sort(descending=True)
 
                 pred_tokens_mask = torch.zeros_like(context_input)
-                print(f"input: {self.tokenizer.convert_ids_to_tokens(context_input[0])}")
-                print(f"pred_tokens_mask: {pred_tokens_mask}")
                 for idx in sorted_indices:
                     passage_idx = pred_mention_masks[0][idx]
                     if pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1] + 1].sum() >= 1:
@@ -324,9 +322,6 @@ class ELQ(EntityLinking):
                         )
                     )
                     pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1] + 1] = 1
-                    print(f"pred_mention_bounds: {pred_mention_bounds[idx]}")
-                    print(f"pred_tokens_mask: {pred_tokens_mask[passage_idx]}")
-                    print("-" * 100)
                 runtimes["inference"]["post_processing"] += time() - init_time
 
         # Sort entities by span start
@@ -451,31 +446,31 @@ if __name__ == "__main__":
     print(response.runtimes)
     print("-" * 100)
 
-    # texts = [
-    #     "Barack Obama is the former president of the United States.",
-    #     "The Eiffel Tower is located in Paris.",
-    # ]
-    # response = model(texts=texts, return_candidates=False, return_metadata=["id"])
-    # print(response.passages)
-    # print(response.runtimes)
-    # print("-" * 100)
+    texts = [
+        "Barack Obama is the former president of the United States.",
+        "The Eiffel Tower is located in Paris.",
+    ]
+    response = model(texts=texts, return_candidates=False, return_metadata=["id"])
+    print(response.passages)
+    print(response.runtimes)
+    print("-" * 100)
 
-    # passages = [
-    #     Passage(
-    #         text="Barack Obama is the former president of the United States.", 
-    #         spans=[
-    #             Span(start=0, end=12, surface_form="Barack Obama"),
-    #             Span(start=27, end=57, surface_form="president of the United States"),
-    #         ]
-    #     ),
-    #     Passage(
-    #         text="The Eiffel Tower is located in Paris.",
-    #         spans=[
-    #             Span(start=4, end=16, surface_form="Eiffel Tower"),
-    #             Span(start=31, end=36, surface_form="Paris"),
-    #         ]
-    #     ),
-    # ]
-    # response = model(passages=passages, return_candidates=False, return_metadata=["id"])
-    # print(response.passages)
-    # print(response.runtimes)
+    passages = [
+        Passage(
+            text="Barack Obama is the former president of the United States.", 
+            spans=[
+                Span(start=0, end=12, surface_form="Barack Obama"),
+                Span(start=27, end=57, surface_form="president of the United States"),
+            ]
+        ),
+        Passage(
+            text="The Eiffel Tower is located in Paris.",
+            spans=[
+                Span(start=4, end=16, surface_form="Eiffel Tower"),
+                Span(start=31, end=36, surface_form="Paris"),
+            ]
+        ),
+    ]
+    response = model(passages=passages, return_candidates=False, return_metadata=["id"])
+    print(response.passages)
+    print(response.runtimes)
