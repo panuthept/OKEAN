@@ -266,8 +266,8 @@ class ELQ(EntityLinking):
                 top_cand_logits_shape = torch.zeros(len(matches), self.max_candidates, dtype=torch.float32, device=self.device)
                 top_cand_indices_shape = torch.zeros(len(matches), self.max_candidates, dtype=torch.int32, device=self.device)
                 for i, match in enumerate(matches):
-                    top_cand_logits_shape[i] = torch.from_numpy(match.distances.astype(np.float32))[::-1]
-                    top_cand_indices_shape[i] = torch.from_numpy(match.keys.astype(np.int32))[::-1]
+                    top_cand_logits_shape[i] = torch.from_numpy(match.distances.astype(np.float32))
+                    top_cand_indices_shape[i] = torch.from_numpy(match.keys.astype(np.int32))
                 
                 # (batch_size, num_mentions, max_candidates)
                 top_cand_logits = torch.zeros(
@@ -400,7 +400,7 @@ if __name__ == "__main__":
         "The Eiffel Tower is located in Paris.",
     ]
 
-    response = model(texts=texts)
+    response = model(texts=texts, return_candidates=True)
     print(response.passages)
     print(response.runtimes)
 
