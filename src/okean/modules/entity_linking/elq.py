@@ -413,10 +413,14 @@ if __name__ == "__main__":
     )
     model.precompute_entity_corpus(save_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus")
 
-    # texts = [
-    #     "Barack Obama is the former president of the United States.",
-    #     "The Eiffel Tower is located in Paris.",
-    # ]
+    texts = [
+        "Barack Obama is the former president of the United States.",
+        "The Eiffel Tower is located in Paris.",
+    ]
+    response = model(texts=texts, return_candidates=False, return_metadata=["id"])
+    print(response.passages)
+    print(response.runtimes)
+
     passages = [
         Passage(
             text="Barack Obama is the former president of the United States.", 
@@ -432,7 +436,6 @@ if __name__ == "__main__":
             ]
         ),
     ]
-
     response = model(passages=passages, return_candidates=False, return_metadata=["id"])
     print(response.passages)
     print(response.runtimes)
