@@ -245,16 +245,21 @@ class ELQ(EntityLinking):
                 pred_mention_masks = (mention_logits > 0).nonzero(as_tuple=True)
                 # print(f"pred_mention_masks:\n{pred_mention_masks}")
                 # (num_pred_mentions, )
+                pred_mention_logits = mention_logits[pred_mention_masks]
                 pred_mention_bounds = mention_bounds[pred_mention_masks]
                 pred_combined_scores = combined_scores[pred_mention_masks]
                 # (num_pred_mentions, max_candidates)
                 pred_cand_logits = top_cand_logits[pred_mention_masks]
                 pred_cand_indices = top_cand_indices[pred_mention_masks]
-                pred_cand_confs = torch.softmax(pred_cand_logits, -1)
                 # print(f"pred_mention_bounds:\n{pred_mention_bounds}\n{pred_mention_bounds.size()}")
                 # print(f"pred_combined_scores:\n{pred_combined_scores}\n{pred_combined_scores.size()}")
                 # print(f"pred_cand_logits:\n{pred_cand_logits}\n{pred_cand_logits.size()}")
                 # print(f"pred_cand_indices:\n{pred_cand_indices}\n{pred_cand_indices.size()}")
+
+                # (num_pred_mentions, )
+                pred_mention_confs = torch.sigmoid(pred_mention_logits)
+                # (num_pred_mentions, max_candidates)
+                pred_cand_confs = torch.softmax(pred_cand_logits, -1)
 
                 _, sorted_indices = pred_combined_scores.sort(descending=True)
 
@@ -269,15 +274,18 @@ class ELQ(EntityLinking):
                     passage_idx = pred_mention_masks[0][idx]
                     if pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]].sum() >= 1:
                         continue
-                    # final_cand_logits.append(pred_cand_logits[idx])
-                    # final_cand_indices.append(pred_cand_indices[idx])
-                    # final_mention_bounds.append(pred_mention_bounds[idx])
-                    # span_start =  # Map to original character index
+
+                    span_start = offset_mappings[passage_idx][pred_mention_bounds[idx][0]][0]
+                    span_end = offset_mappings[passage_idx][pred_mention_bounds[idx][1]][1]
+                    span_text = output_passages[passage_idx].text[span_start:span_end]
+
                     output_passages[passage_idx].entities.append(
                         Span(
-                            start=offset_mappings[passage_idx][pred_mention_bounds[idx][0]][0],
-                            end=offset_mappings[passage_idx][pred_mention_bounds[idx][1]][1],
-                            surface_form=self.tokenizer.decode(context_input[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]]),
+                            start=span_start,
+                            end=span_end,
+                            surface_form=span_text,
+                            logit=pred_mention_logits[idx],
+                            confident=pred_mention_confs[idx],
                             entities=[
                                 Entity(
                                     identifier=pred_cand_indices[idx][cand_idx],
