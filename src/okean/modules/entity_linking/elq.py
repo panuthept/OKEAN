@@ -418,29 +418,30 @@ if __name__ == "__main__":
         use_fp16=False,
     )
 
-    # texts = [
-    #     "Barack Obama is the former president of the United States.",
-    #     "The Eiffel Tower is located in Paris.",
-    # ]
-    # response = model(texts=texts, return_candidates=False, return_metadata=["id"])
-    # print(response.passages)
-    # print(response.runtimes)
+    texts = [
+        "Barack Obama is the former president of the United States.",
+        "The Eiffel Tower is located in Paris.",
+    ]
+    response = model(texts=texts, return_candidates=False, return_metadata=["id"])
+    print(response.passages)
+    print(response.runtimes)
+    print("-" * 100)
 
-    # passages = [
-    #     Passage(
-    #         text="Barack Obama is the former president of the United States.", 
-    #         spans=[
-    #             Span(start=0, end=12, surface_form="Barack Obama"),
-    #             Span(start=27, end=57, surface_form="president of the United States"),
-    #         ]
-    #     ),
-    #     Passage(
-    #         text="The Eiffel Tower is located in Paris.",
-    #         spans=[
-    #             Span(start=4, end=16, surface_form="Eiffel Tower"),
-    #         ]
-    #     ),
-    # ]
-    # response = model(passages=passages, return_candidates=False, return_metadata=["id"])
-    # print(response.passages)
-    # print(response.runtimes)
+    passages = [
+        Passage(
+            text="Barack Obama is the former president of the United States.", 
+            spans=[
+                Span(start=0, end=12, surface_form="Barack Obama"),
+                Span(start=27, end=57, surface_form="president of the United States"),
+            ]
+        ),
+        Passage(
+            text="The Eiffel Tower is located in Paris.",
+            spans=[
+                Span(start=4, end=16, surface_form="Eiffel Tower"),
+            ]
+        ),
+    ]
+    response = model(passages=passages, return_candidates=False, return_metadata=["id"])
+    print(response.passages)
+    print(response.runtimes)
