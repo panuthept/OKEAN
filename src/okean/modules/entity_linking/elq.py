@@ -241,11 +241,12 @@ class ELQ(EntityLinking):
                 # Retrieve candidates
                 init_time = time()
                 if self.index is None:
-                    cand_logits, _, _ = self.model.score_candidate(
-                        context_input, None,
-                        text_encs=mention_embeddings,
-                        cand_encs=self.corpus_embeddings.to(self.device),
-                    )
+                    # cand_logits, _, _ = self.model.score_candidate(
+                    #     context_input, None,
+                    #     text_encs=mention_embeddings,
+                    #     cand_encs=self.corpus_embeddings.to(self.device),
+                    # )
+                    cand_logits = torch.matmul(mention_embeddings, self.corpus_embeddings.t())
                     top_cand_logits_shape, top_cand_indices_shape = cand_logits.topk(self.max_candidates, dim=-1, sorted=True)
                     # print(f"top_cand_logits_shape: {top_cand_logits_shape.size()}")
                     # matches: Union[BatchMatches, Matches] = search(
