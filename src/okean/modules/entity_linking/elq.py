@@ -422,7 +422,7 @@ if __name__ == "__main__":
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
         precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
         max_candidates=30,
-        md_threshold=0.2,
+        md_threshold=0.0,
         use_fp16=False,
     )
     # model.save_pretrained("./data/models/entity_linking/elq_wikipedia")
