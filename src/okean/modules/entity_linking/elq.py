@@ -153,9 +153,11 @@ class ELQ(EntityLinking):
         for passage in passages:
             tokenizer_output = self.tokenizer(passage.text, return_offsets_mapping=True)
             tokenizer_output["offset_mapping"] = [[start, end] for start, end in tokenizer_output["offset_mapping"]]
+
             encoded_sample = [101] + tokenizer_output["input_ids"][1:-1][:self.config.max_context_length - 2] + [102]
             offset_mapping = [[0, 0]] + tokenizer_output["offset_mapping"][1:-1][:self.config.max_context_length - 2] + [[0, 0]]
             max_seq_len = max(len(encoded_sample), max_seq_len)
+            
             encoded_samples.append(encoded_sample)
             offset_mappings.append(offset_mapping)
 
