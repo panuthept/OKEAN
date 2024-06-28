@@ -421,6 +421,12 @@ if __name__ == "__main__":
     )
     # model.save_pretrained("./data/models/entity_linking/elq_wikipedia")
 
+    text = "Which member of Black Eyed Peas appeared in Poseidon?"
+    response = model(texts=text, return_candidates=False, return_metadata=["id"])
+    print(response.passages)
+    print(response.runtimes)
+    print("-" * 100)
+
     texts = [
         "Barack Obama is the former president of the United States.",
         "The Eiffel Tower is located in Paris.",
