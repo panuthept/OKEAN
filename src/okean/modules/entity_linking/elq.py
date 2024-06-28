@@ -386,6 +386,7 @@ class ELQ(EntityLinking):
         entity_corpus_path: str,
         precomputed_entity_corpus_path: Optional[str] = None,
         max_candidates: int = 30,
+        md_threshold: float = 0.5,
         device: Optional[str] = None,
         use_fp16: bool = True,
     ):
@@ -409,6 +410,7 @@ class ELQ(EntityLinking):
             precomputed_entity_corpus_path=precomputed_entity_corpus_path,
             path_to_model=path_to_model,
             max_candidates=max_candidates,
+            md_threshold=md_threshold,
             device=device,
             use_fp16=use_fp16,
         )
