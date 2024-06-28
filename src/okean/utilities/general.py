@@ -16,6 +16,9 @@ def texts_to_passages(texts: List[str]|str = None, passages: List[Passage]|Passa
     return passages
 
 
-def pad_1d_sequence(sequence: List[Any], pad_value: Any, pad_length: int) -> List[Any]:
-    assert len(sequence) <= pad_length, f"Length of `sequence` ({len(sequence)}) must be less than or equal to `pad_length` ({pad_length})."
-    return sequence + [pad_value] * (pad_length - len(sequence))
+def pad_1d_sequence(sequences: List[List[Any]], pad_value: Any, pad_length: int) -> List[Any]:
+    padded_sequences = []
+    for sequence in sequences:
+        assert len(sequence) <= pad_length, f"Length of `sequence` ({len(sequence)}) must be less than or equal to `pad_length` ({pad_length})."
+        padded_sequences.append(sequence + [pad_value] * (pad_length - len(sequence)))
+    return padded_sequences

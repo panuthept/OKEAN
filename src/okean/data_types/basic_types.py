@@ -1,3 +1,4 @@
+from torch import FloatTensor
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 from okean.data_types.baseclass import BaseDataType
@@ -6,7 +7,8 @@ from okean.data_types.baseclass import BaseDataType
 @dataclass
 class Entity(BaseDataType):
     identifier: str
-    confident: Optional[float] = None
+    logit: Optional[float|FloatTensor] = None
+    confident: Optional[float|FloatTensor] = None
     metadata: Optional[Dict[str, Any]] = None
 
     def __repr__(self) -> str:
@@ -23,7 +25,8 @@ class Span(BaseDataType):
     start: int
     end: int
     surface_form: str
-    confident: Optional[float] = None
+    logit: Optional[float|FloatTensor] = None
+    confident: Optional[float|FloatTensor] = None
     entities: Optional[Entity] = None
     candidates: Optional[List[Entity]] = None
 
@@ -39,7 +42,8 @@ class Span(BaseDataType):
 @dataclass
 class Passage(BaseDataType):
     text: str
-    confident: Optional[float] = None
+    logit: Optional[float|FloatTensor] = None
+    confident: Optional[float|FloatTensor] = None
     entities: Optional[List[Span]] = None
     relations: Optional[List[Dict[str, Any]]] = None
 
@@ -55,7 +59,8 @@ class Passage(BaseDataType):
 @dataclass
 class Document(BaseDataType):
     passages: List[Passage]
-    confident: Optional[float] = None
+    logit: Optional[float|FloatTensor] = None
+    confident: Optional[float|FloatTensor] = None
 
     def __repr__(self) -> str:
         attributes = ", ".join([f"{k}='{v}'" if isinstance(v, str) else f"{k}={v}" for k, v in self.__dict__.items() if v is not None])

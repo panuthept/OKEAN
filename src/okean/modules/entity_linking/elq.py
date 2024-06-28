@@ -283,7 +283,8 @@ class ELQ(EntityLinking):
                             entities=[
                                 Entity(
                                     identifier=pred_cand_indices[idx][cand_idx],
-                                    confident=pred_cand_logits[idx][cand_idx],
+                                    logit=pred_cand_logits[idx][cand_idx],
+                                    logit=pred_cand_logits[idx][cand_idx],
                                     # metadata=self.corpus_contents[pred_cand_indices[idx][cand_idx]],
                                 )
                             for cand_idx in range(self.max_candidates)]
