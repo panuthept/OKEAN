@@ -157,12 +157,14 @@ class ELQ(EntityLinking):
             max_seq_len = max(len(encoded_sample), max_seq_len)
             encoded_samples.append(encoded_sample)
             offset_mappings.append(offset_mapping)
+        print(f"encoded_samples:\n{encoded_samples}\n{len(encoded_samples)}")
+        print(f"offset_mappings:\n{offset_mappings}\n{len(offset_mappings)}")
 
         # Pad samples
         padded_encoded_samples = pad_1d_sequence(encoded_samples, pad_value=0, pad_length=max_seq_len)
         padded_offset_mappings = pad_1d_sequence(offset_mappings, pad_value=(0, 0), pad_length=max_seq_len)
-        print(f"padded_encoded_samples:\n{padded_encoded_samples}\n{padded_encoded_samples.size()}")
-        print(f"padded_offset_mappings:\n{padded_offset_mappings}\n{padded_offset_mappings.size()}")
+        print(f"padded_encoded_samples:\n{padded_encoded_samples}\n{len(padded_encoded_samples)}")
+        print(f"padded_offset_mappings:\n{padded_offset_mappings}\n{len(padded_offset_mappings)}")
 
         # Cast to tensor
         tensor_data_tuple = torch.tensor([padded_encoded_samples, padded_offset_mappings])
@@ -194,7 +196,7 @@ class ELQ(EntityLinking):
             offset_mappings = batch[1]
             with torch.no_grad():
                 # Encode input text
-                print(context_input)
+                # print(context_input)
                 embeddings = self.model.encode_context(context_input)
                 mention_embeddings = embeddings["mention_reps"]
                 mention_masks = embeddings["mention_masks"]
@@ -203,10 +205,10 @@ class ELQ(EntityLinking):
 
                 # Get mention embeddings
                 mention_embeddings = mention_embeddings[mention_masks]
-                print(f"mention_embeddings:\n{mention_embeddings}\n{mention_embeddings.size()}")
-                print(f"mention_masks:\n{mention_masks}\n{mention_masks.size()}")
-                print(f"mention_logits:\n{mention_logits}\n{mention_logits.size()}")
-                print(f"mention_bounds:\n{mention_bounds}\n{mention_bounds.size()}")
+                # print(f"mention_embeddings:\n{mention_embeddings}\n{mention_embeddings.size()}")
+                # print(f"mention_masks:\n{mention_masks}\n{mention_masks.size()}")
+                # print(f"mention_logits:\n{mention_logits}\n{mention_logits.size()}")
+                # print(f"mention_bounds:\n{mention_bounds}\n{mention_bounds.size()}")
 
                 # Retrieve candidates
                 if self.index is None:
@@ -224,8 +226,8 @@ class ELQ(EntityLinking):
                     if isinstance(matches, Matches):
                         matches = [matches]
 
-                print(f"top_cand_logits_shape:\n{top_cand_logits_shape}\n{top_cand_logits_shape.size()}")
-                print(f"top_cand_indices_shape:\n{top_cand_indices_shape}\n{top_cand_indices_shape.size()}")
+                # print(f"top_cand_logits_shape:\n{top_cand_logits_shape}\n{top_cand_logits_shape.size()}")
+                # print(f"top_cand_indices_shape:\n{top_cand_indices_shape}\n{top_cand_indices_shape.size()}")
 
                 # (batch_size, num_mentions, max_candidates)
                 top_cand_logits = torch.zeros(
@@ -241,20 +243,20 @@ class ELQ(EntityLinking):
 
                 # (batch_size, num_mentions)
                 combined_scores = torch.log_softmax(top_cand_logits, -1)[:, :, 0] + torch.sigmoid(mention_logits).log()
-                print(f"combined_scores:\n{combined_scores}\n{combined_scores.size()}")
+                # print(f"combined_scores:\n{combined_scores}\n{combined_scores.size()}")
 
                 pred_mention_masks = (mention_logits > 0).nonzero(as_tuple=True)
-                print(f"pred_mention_masks:\n{pred_mention_masks}")
+                # print(f"pred_mention_masks:\n{pred_mention_masks}")
                 # (batch_size, num_pred_mentions)
                 pred_mention_bounds = mention_bounds[pred_mention_masks]
                 pred_combined_scores = combined_scores[pred_mention_masks]
                 # (batch_size, num_pred_mentions, max_candidates)
                 pred_cand_logits = top_cand_logits[pred_mention_masks]
                 pred_cand_indices = top_cand_indices[pred_mention_masks]
-                print(f"pred_mention_bounds:\n{pred_mention_bounds}\n{pred_mention_bounds.size()}")
-                print(f"pred_combined_scores:\n{pred_combined_scores}\n{pred_combined_scores.size()}")
-                print(f"pred_cand_logits:\n{pred_cand_logits}\n{pred_cand_logits.size()}")
-                print(f"pred_cand_indices:\n{pred_cand_indices}\n{pred_cand_indices.size()}")
+                # print(f"pred_mention_bounds:\n{pred_mention_bounds}\n{pred_mention_bounds.size()}")
+                # print(f"pred_combined_scores:\n{pred_combined_scores}\n{pred_combined_scores.size()}")
+                # print(f"pred_cand_logits:\n{pred_cand_logits}\n{pred_cand_logits.size()}")
+                # print(f"pred_cand_indices:\n{pred_cand_indices}\n{pred_cand_indices.size()}")
 
                 _, sorted_indices = pred_combined_scores.sort(descending=True)
 
@@ -264,7 +266,7 @@ class ELQ(EntityLinking):
                 pred_tokens_mask = torch.zeros_like(context_input)
                 # Remove special tokens [CLS] and [SEP]
                 context_input = context_input[:, 1:-1]
-                print(f"sorted_indices:\n{sorted_indices}\n{sorted_indices.size()}")
+                # print(f"sorted_indices:\n{sorted_indices}\n{sorted_indices.size()}")
                 for idx in sorted_indices:
                     passage_idx = pred_mention_masks[0][idx]
                     if pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]].sum() >= 1:
