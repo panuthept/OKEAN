@@ -43,13 +43,15 @@ class ELQ(EntityLinking):
             precomputed_entity_corpus_path: Optional[str] = None,
             path_to_model: Optional[str] = None,
             max_candidates: int = 30,
+            md_threshold: float = 0.5,
             device: Optional[str] = None,
             use_fp16: bool = False,
     ):
         self.config = config
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else torch.device(device)
+
         self.max_candidates = max_candidates
-        self.precomputed_entity_corpus_path = precomputed_entity_corpus_path
+        self.md_threshold = md_threshold
 
         param = config.to_dict()
         param["path_to_model"] = path_to_model
@@ -58,6 +60,7 @@ class ELQ(EntityLinking):
         if use_fp16: self.model.model.half()
         self.tokenizer = self.model.tokenizer
 
+        self.precomputed_entity_corpus_path = precomputed_entity_corpus_path
         self.corpus_contents = load_entity_corpus(entity_corpus_path)
         self.corpus_tokens = None
         self.corpus_embeddings = None
@@ -271,7 +274,7 @@ class ELQ(EntityLinking):
                 combined_scores = torch.log_softmax(top_cand_logits, -1)[:, :, 0] + torch.sigmoid(mention_logits).log()
 
                 # (num_pred_mentions, )
-                pred_mention_masks = (mention_logits > 0).nonzero(as_tuple=True)
+                pred_mention_masks = (torch.sigmoid(mention_logits) > self.md_threshold).nonzero(as_tuple=True)
 
                 # (num_pred_mentions, )
                 pred_mention_logits = mention_logits[pred_mention_masks]
@@ -417,6 +420,7 @@ if __name__ == "__main__":
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
         precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
         max_candidates=30,
+        md_threshold=0.5,
         use_fp16=False,
     )
     # model.save_pretrained("./data/models/entity_linking/elq_wikipedia")
