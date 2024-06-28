@@ -197,6 +197,7 @@ class ELQ(EntityLinking):
             texts: List[str]|str = None, 
             passages: List[Passage]|Passage = None,
             batch_size: int = 8,
+            return_metadata: bool = False,
     ) -> List[Passage]:
         passages: List[Passage] = texts_to_passages(texts=texts, passages=passages)
         output_passages = copy.deepcopy(passages)
@@ -245,8 +246,8 @@ class ELQ(EntityLinking):
                 top_cand_logits_shape = []
                 top_cand_indices_shape = []
                 for match in matches:
-                    top_cand_logits_shape.append(match.distances)
-                    top_cand_indices_shape.append(match.keys)
+                    top_cand_logits_shape.append(match.distances.astype(np.float32))
+                    top_cand_indices_shape.append(match.keys.astype(np.int32))
                 print(f"top_cand_logits_shape: {top_cand_logits_shape}")
                 print(f"top_cand_indices_shape: {top_cand_indices_shape}")
                 top_cand_logits_shape = torch.tensor(top_cand_logits_shape).to(self.device)
@@ -308,7 +309,7 @@ class ELQ(EntityLinking):
                                     identifier=pred_cand_indices[idx][cand_idx],
                                     logit=pred_cand_logits[idx][cand_idx],
                                     confident=pred_cand_confs[idx][cand_idx],
-                                    # metadata=self.corpus_contents[pred_cand_indices[idx][cand_idx]],
+                                    metadata=self.corpus_contents[pred_cand_indices[idx][cand_idx]] if return_metadata else None,
                                 )
                             for cand_idx in range(self.max_candidates)]
                         )
