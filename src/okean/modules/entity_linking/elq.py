@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Tuple, Optional
 from okean.utilities.readers import load_entity_corpus
 from okean.data_types.basic_types import Passage, Span, Entity
 from okean.utilities.general import texts_to_passages, pad_1d_sequence
+from okean.packages.elq_package.common.ranker_base import get_model_obj
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 from okean.packages.elq_package.biencoder.biencoder import BiEncoderRanker
 from okean.modules.entity_linking.baseclass import EntityLinking, EntityLinkingResponse
@@ -39,10 +40,9 @@ class ELQ(EntityLinking):
             self, 
             config: ELQConfig,
             entity_corpus_path: str,
-            max_candidates: int = 30,
             precomputed_entity_corpus_path: Optional[str] = None,
+            max_candidates: int = 30,
             device: Optional[str] = None,
-            data_parallel: bool = False,
             use_fp16: bool = True,
     ):
         self.config = config
@@ -50,9 +50,7 @@ class ELQ(EntityLinking):
         self.max_candidates = max_candidates
         self.precomputed_entity_corpus_path = precomputed_entity_corpus_path
 
-        param = config.to_dict()
-        param["data_parallel"] = data_parallel
-        self.model = BiEncoderRanker(param, device=device)
+        self.model = BiEncoderRanker(config.to_dict(), device=device)
         self.model.eval()
         if use_fp16: self.model.model.half()
         self.tokenizer = self.model.tokenizer
@@ -75,7 +73,6 @@ class ELQ(EntityLinking):
         elif precomputed_entity_corpus_tokens_path and os.path.exists(precomputed_entity_corpus_tokens_path):
             print("Loading precomputed entity corpus tokens...")
             self.corpus_tokens = torch.load(precomputed_entity_corpus_tokens_path)
-        print("Done.")
 
     def _precompute_entity_corpus_tokens(
             self, 
@@ -185,11 +182,8 @@ class ELQ(EntityLinking):
     def _inference(
             self,
             passages: List[Passage],
-            encoded_samples: torch.Tensor,
-            offset_mappings: torch.Tensor,
             runtimes: Dict[str, float],
-            mention_bounds: Optional[torch.Tensor] = None,
-            mention_masks: Optional[torch.Tensor] = None,
+            processed_inputs: Tuple[Any],
             batch_size: int = 8,
             return_candidates: bool = False,
             return_metadata: List[str]|str|bool = False,
@@ -200,7 +194,8 @@ class ELQ(EntityLinking):
             passage.spans = []
 
         # Cast to tensor
-        tensor_data_tuple = [torch.tensor(encoded_samples), torch.tensor(offset_mappings)]
+        encoded_inputs, offset_mappings, mention_bounds, mention_masks = processed_inputs
+        tensor_data_tuple = [torch.tensor(encoded_inputs), torch.tensor(offset_mappings)]
         if mention_bounds is not None and mention_masks is not None:
             tensor_data_tuple = tensor_data_tuple + [
                 torch.tensor(mention_bounds), 
@@ -354,22 +349,29 @@ class ELQ(EntityLinking):
         # Prepare input data
         init_time = time()
         passages: List[Passage] = texts_to_passages(texts=texts, passages=passages)
-        encoded_inputs, offset_mappings, mention_bounds, mention_masks = self._input_preprocessing(passages=passages)
+        processed_inputs = self._input_preprocessing(passages=passages)
         runtimes["input_preprocessing"] = time() - init_time
 
         # Inference
         passages, runtimes = self._inference(
             passages, 
-            encoded_inputs, 
-            offset_mappings, 
-            runtimes=runtimes,
-            mention_bounds=mention_bounds,
-            mention_masks=mention_masks,
+            runtimes,
+            processed_inputs,
             batch_size=batch_size,
             return_candidates=return_candidates,
             return_metadata=return_metadata
         )
         return EntityLinkingResponse(passages=passages, runtimes=runtimes) 
+    
+    def save_pretrained(self, save_path: str):
+        os.makedirs(save_path, exist_ok=True)
+
+        self.config = self.config.to_dict()
+        with open(os.path.join(save_path, "config.json"), "w") as f:
+            json.dump(self.config, f, indent=1)
+
+        model_to_save = get_model_obj(self.model.model)
+        torch.save(model_to_save.state_dict(), os.path.join(save_path, "model.bin"))
 
     @classmethod
     def from_pretrained(
@@ -379,67 +381,66 @@ class ELQ(EntityLinking):
         precomputed_entity_corpus_path: Optional[str] = None,
         max_candidates: int = 30,
         device: Optional[str] = None,
-        data_parallel: bool = False,
         use_fp16: bool = True,
     ):
         config = ELQConfig(**json.load(open(f"{model_path}/config.json")))
         return cls(
             config=config,
             entity_corpus_path=entity_corpus_path,
-            max_candidates=max_candidates,
             precomputed_entity_corpus_path=precomputed_entity_corpus_path,
+            max_candidates=max_candidates,
             device=device,
-            data_parallel=data_parallel,
             use_fp16=use_fp16,
         )
     
 
 if __name__ == "__main__":
-    model = ELQ(
-        config=ELQConfig(
-            bert_model = "bert-large-uncased",
-            path_to_model = "./data/models/entity_linking/elq_wikipedia/model.bin",
-            max_context_length = 128,
-            max_cand_length = 128,
-        ),
-        use_fp16=False,
-        data_parallel=True,
-        entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
-        precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
-    )
-    model.precompute_entity_corpus(save_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus")
-
-    texts = [
-        "Barack Obama is the former president of the United States.",
-        "The Eiffel Tower is located in Paris.",
-    ]
-    response = model(texts=texts, return_candidates=False, return_metadata=["id"])
-    print(response.passages)
-    print(response.runtimes)
-
-    passages = [
-        Passage(
-            text="Barack Obama is the former president of the United States.", 
-            spans=[
-                Span(start=0, end=12, surface_form="Barack Obama"),
-                Span(start=27, end=57, surface_form="president of the United States"),
-            ]
-        ),
-        Passage(
-            text="The Eiffel Tower is located in Paris.",
-            spans=[
-                Span(start=4, end=16, surface_form="Eiffel Tower"),
-            ]
-        ),
-    ]
-    response = model(passages=passages, return_candidates=False, return_metadata=["id"])
-    print(response.passages)
-    print(response.runtimes)
-
-    # model = ELQ.from_pretrained(
-    #     model_path="./data/models/entity_linking/elq_wikipedia",
+    # model = ELQ(
+    #     config=ELQConfig(
+    #         bert_model = "bert-large-uncased",
+    #         path_to_model = "./data/models/entity_linking/elq_wikipedia/model.bin",
+    #         max_context_length = 128,
+    #         max_cand_length = 128,
+    #     ),
+    #     max_candidates=30,
+    #     use_fp16=False,
     #     entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
     #     precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
-    #     max_candidates=30,
-    #     device="cuda",
     # )
+    # model.precompute_entity_corpus(save_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus")
+    # model.save_pretrained(save_path="./data/models/entity_linking/elq_wikipedia_2")
+
+    model = ELQ.from_pretrained(
+        model_path="./data/models/entity_linking/elq_wikipedia_2",
+        entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
+        precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
+        max_candidates=30,
+        use_fp16=False,
+    )
+
+    # texts = [
+    #     "Barack Obama is the former president of the United States.",
+    #     "The Eiffel Tower is located in Paris.",
+    # ]
+    # response = model(texts=texts, return_candidates=False, return_metadata=["id"])
+    # print(response.passages)
+    # print(response.runtimes)
+
+    # passages = [
+    #     Passage(
+    #         text="Barack Obama is the former president of the United States.", 
+    #         spans=[
+    #             Span(start=0, end=12, surface_form="Barack Obama"),
+    #             Span(start=27, end=57, surface_form="president of the United States"),
+    #         ]
+    #     ),
+    #     Passage(
+    #         text="The Eiffel Tower is located in Paris.",
+    #         spans=[
+    #             Span(start=4, end=16, surface_form="Eiffel Tower"),
+    #         ]
+    #     ),
+    # ]
+    # response = model(passages=passages, return_candidates=False, return_metadata=["id"])
+    # print(response.passages)
+    # print(response.runtimes)

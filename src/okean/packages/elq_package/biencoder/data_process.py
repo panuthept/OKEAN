@@ -331,7 +331,7 @@ def get_candidate_representation(
         title_tokens = tokenizer.tokenize(candidate_title)
         cand_tokens = title_tokens + [title_tag] + cand_tokens
 
-    cand_tokens = cand_tokens[: max_seq_length - 2]
+    cand_tokens = cand_tokens[:max_seq_length - 2]
     cand_tokens = [cls_token] + cand_tokens + [sep_token]
 
     input_ids = tokenizer.convert_tokens_to_ids(cand_tokens)

@@ -592,8 +592,8 @@ class BiEncoderRanker(torch.nn.Module):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         model_to_save = get_model_obj(self.model) 
-        output_model_file = os.path.join(output_dir, WEIGHTS_NAME)
-        output_config_file = os.path.join(output_dir, CONFIG_NAME)
+        output_model_file = os.path.join(output_dir, "model.bin")
+        output_config_file = os.path.join(output_dir, "model_config.json")
         torch.save(model_to_save.state_dict(), output_model_file)
         model_to_save.config.to_json_file(output_config_file)
 
