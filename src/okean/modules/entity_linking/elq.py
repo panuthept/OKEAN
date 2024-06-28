@@ -148,7 +148,6 @@ class ELQ(EntityLinking):
         mention_masks = None
         for passage in passages:
             tokenizer_output = self.tokenizer(passage.text, return_offsets_mapping=True)
-            print(tokenizer_output)
             tokenizer_output["offset_mapping"] = [[start, end] for start, end in tokenizer_output["offset_mapping"]]
 
             encoded_input = [101] + tokenizer_output["input_ids"][1:-1][:self.config.max_context_length - 2] + [102]
@@ -293,6 +292,7 @@ class ELQ(EntityLinking):
                 _, sorted_indices = pred_combined_scores.sort(descending=True)
 
                 pred_tokens_mask = torch.zeros_like(context_input)
+                print(f"input: {self.tokenizer.decode(context_input)}")
                 print(f"pred_tokens_mask: {pred_tokens_mask}")
                 for idx in sorted_indices:
                     passage_idx = pred_mention_masks[0][idx]
