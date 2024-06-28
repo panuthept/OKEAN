@@ -200,9 +200,9 @@ class ELQ(EntityLinking):
             return_metadata: bool = False,
     ) -> List[Passage]:
         passages: List[Passage] = texts_to_passages(texts=texts, passages=passages)
-        output_passages = copy.deepcopy(passages)
+        output_passages: List[Passage] = copy.deepcopy(passages)
         for passage in output_passages:
-            passage.entities = []
+            passage.mention_spans = []
         
         # Prepare input data
         dataloader = self._input_preprocessing(passages=passages, batch_size=batch_size)
@@ -250,8 +250,8 @@ class ELQ(EntityLinking):
                 top_cand_logits_shape = torch.zeros(len(matches), self.max_candidates, dtype=torch.float32, device=self.device)
                 top_cand_indices_shape = torch.zeros(len(matches), self.max_candidates, dtype=torch.int32, device=self.device)
                 for i, match in enumerate(matches):
-                    top_cand_logits_shape[i] = match.distances.tolist()
-                    top_cand_indices_shape[i] = match.keys.tolist()
+                    top_cand_logits_shape[i] = torch.from_numpy(match.distances.astype(np.float32))
+                    top_cand_indices_shape[i] = torch.from_numpy(match.keys.astype(np.int32))
                 
                 # (batch_size, num_mentions, max_candidates)
                 top_cand_logits = torch.zeros(
@@ -296,21 +296,27 @@ class ELQ(EntityLinking):
                     span_end = offset_mappings[passage_idx][pred_mention_bounds[idx][1]][1]
                     span_text = output_passages[passage_idx].text[span_start:span_end]
 
-                    output_passages[passage_idx].entities.append(
+                    output_passages[passage_idx].mention_spans.append(
                         Span(
                             start=span_start,
                             end=span_end,
                             surface_form=span_text,
                             logit=pred_mention_logits[idx],
                             confident=pred_mention_confs[idx],
-                            entities=[
+                            entity=Entity(
+                                identifier=self.corpus_contents[pred_cand_indices[idx][0]]["id"],
+                                logit=pred_cand_logits[idx][0],
+                                confident=pred_cand_confs[idx][0],
+                                metadata=self.corpus_contents[pred_cand_indices[idx][0]] if return_metadata else None,
+                            ),
+                            candidate_entities=[
                                 Entity(
                                     identifier=pred_cand_indices[idx][cand_idx],
                                     logit=pred_cand_logits[idx][cand_idx],
                                     confident=pred_cand_confs[idx][cand_idx],
                                     metadata=self.corpus_contents[pred_cand_indices[idx][cand_idx]] if return_metadata else None,
                                 )
-                            for cand_idx in range(self.max_candidates)]
+                            for cand_idx in range(self.max_candidates)],
                         )
                     )
                     pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]] = 1
@@ -319,7 +325,7 @@ class ELQ(EntityLinking):
         output_passages = [
             Passage(
                 text=passage.text,
-                entities=sorted(passage.entities, key=lambda x: x.start),
+                mention_spans=sorted(passage.mention_spans, key=lambda x: x.start),
             )
         for passage in output_passages]
         return output_passages 

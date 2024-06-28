@@ -27,8 +27,8 @@ class Span(BaseDataType):
     surface_form: str
     logit: Optional[float|FloatTensor] = None
     confident: Optional[float|FloatTensor] = None
-    entities: Optional[Entity] = None
-    candidates: Optional[List[Entity]] = None
+    entity: Optional[Entity] = None
+    candidate_entities: Optional[List[Entity]] = None
 
     def __repr__(self) -> str:
         attributes = ", ".join([f"{k}='{v}'" if isinstance(v, str) else f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
@@ -44,7 +44,7 @@ class Passage(BaseDataType):
     text: str
     logit: Optional[float|FloatTensor] = None
     confident: Optional[float|FloatTensor] = None
-    entities: Optional[List[Span]] = None
+    mention_spans: Optional[List[Span]] = None
     relations: Optional[List[Dict[str, Any]]] = None
 
     def __repr__(self) -> str:
