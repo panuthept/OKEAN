@@ -2,14 +2,11 @@ import os
 import copy
 import json
 import torch
-import numpy as np
 from tqdm import tqdm
 from time import time
 from dataclasses import dataclass
-from typing import List, Optional, Union
-from okean.data_types.config_types import IndexConfig
+from typing import List, Optional
 from okean.utilities.readers import load_entity_corpus
-from usearch.index import Index, BatchMatches, Matches, search
 from okean.data_types.basic_types import Passage, Span, Entity
 from okean.utilities.general import texts_to_passages, pad_1d_sequence
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
@@ -46,7 +43,6 @@ class ELQ(EntityLinking):
             config: ELQConfig,
             entity_corpus_path: str,
             max_candidates: int = 30,
-            index_config: Optional[IndexConfig] = None, 
             precomputed_entity_corpus_path: Optional[str] = None,
             device: Optional[str] = None,
             use_fp16: bool = True,
@@ -62,13 +58,9 @@ class ELQ(EntityLinking):
         if use_fp16: self.model.model.half()
         self.tokenizer = self.model.tokenizer
 
-        if index_config is None: index_config = IndexConfig(ndim=1024, metric="ip", dtype="f32")
-        self.index_config = index_config
-
         self.corpus_contents = load_entity_corpus(entity_corpus_path)
         self.corpus_tokens = None
         self.corpus_embeddings = None
-        self.index = None
 
         self._load_precomputed_entity_corpus()
 
@@ -76,13 +68,9 @@ class ELQ(EntityLinking):
         if self.precomputed_entity_corpus_path is None:
             return
         
-        precomputed_entity_corpus_index_path = os.path.join(self.precomputed_entity_corpus_path, "index.usearch")
         precomputed_entity_corpus_tokens_path = os.path.join(self.precomputed_entity_corpus_path, "tokens.pt")
         precomputed_entity_corpus_embeddings_path = os.path.join(self.precomputed_entity_corpus_path, "embeddings.pt")
-        if precomputed_entity_corpus_index_path and os.path.exists(precomputed_entity_corpus_index_path):
-            print("Loading precomputed entity corpus index...")
-            self.index = Index.restore(precomputed_entity_corpus_index_path)
-        elif precomputed_entity_corpus_embeddings_path and os.path.exists(precomputed_entity_corpus_embeddings_path):
+        if precomputed_entity_corpus_embeddings_path and os.path.exists(precomputed_entity_corpus_embeddings_path):
             print("Loading precomputed entity corpus embeddings...")
             self.corpus_embeddings = torch.load(os.path.join(precomputed_entity_corpus_embeddings_path))
         elif precomputed_entity_corpus_tokens_path and os.path.exists(precomputed_entity_corpus_tokens_path):
@@ -108,7 +96,7 @@ class ELQ(EntityLinking):
         os.makedirs(save_path, exist_ok=True)
         torch.save(self.corpus_tokens, os.path.join(save_path, "tokens.pt"))
 
-    def _precompute_entity_corpus_embeddings(
+    def precompute_entity_corpus(
             self, 
             save_path: str, 
             batch_size: int = 8, 
@@ -134,31 +122,6 @@ class ELQ(EntityLinking):
 
         os.makedirs(save_path, exist_ok=True)
         torch.save(self.corpus_embeddings, os.path.join(save_path, "embeddings.pt"))
-
-    def _precompute_entity_corpus_index(
-            self, 
-            save_path: str,
-            batch_size: int = 8,
-            verbose: bool = True,
-    ):
-        if self.corpus_embeddings is None:
-            self._precompute_entity_corpus_embeddings(save_path=save_path, batch_size=batch_size, verbose=verbose)
-
-        self.index = Index(**self.index_config.to_dict())
-        self.index.add(np.arange(len(self.corpus_contents)), self.corpus_embeddings.numpy(), log="Creating index" if verbose else False)
-        self.index.save(os.path.join(save_path, "index.usearch"))
-
-    def precompute_entity_corpus(
-            self,
-            save_path: str,
-            batch_size: int = 8,
-            create_index: bool = True,
-            verbose: bool = True,
-    ):
-        if create_index:
-            self._precompute_entity_corpus_index(save_path=save_path, batch_size=batch_size, verbose=verbose)
-        else:
-            self._precompute_entity_corpus_embeddings(save_path=save_path, verbose=verbose)
 
     def _input_preprocessing(
             self,
@@ -241,35 +204,9 @@ class ELQ(EntityLinking):
 
                 # Retrieve candidates
                 init_time = time()
-                if self.index is None:
-                    # cand_logits, _, _ = self.model.score_candidate(
-                    #     context_input, None,
-                    #     text_encs=mention_embeddings,
-                    #     cand_encs=self.corpus_embeddings.to(self.device),
-                    # )
-                    cand_logits = torch.matmul(mention_embeddings, self.corpus_embeddings.t())
-                    top_cand_logits_shape, top_cand_indices_shape = cand_logits.topk(self.max_candidates, dim=-1, sorted=True)
-                    # print(f"top_cand_logits_shape: {top_cand_logits_shape.size()}")
-                    # matches: Union[BatchMatches, Matches] = search(
-                    #     self.corpus_embeddings.numpy(), 
-                    #     mention_embeddings.cpu().numpy(), 
-                    #     count=self.max_candidates, 
-                    #     metric="ip", 
-                    #     exact=True,
-                    # )
-                else:
-                    matches: Union[BatchMatches, Matches] = self.index.search(
-                        mention_embeddings.cpu().numpy(), 
-                        count=self.max_candidates,
-                    )
-                # if isinstance(matches, Matches):
-                #     matches = [matches]
-
-                # top_cand_logits_shape = torch.zeros(len(matches), self.max_candidates, dtype=torch.float32, device=self.device)
-                # top_cand_indices_shape = torch.zeros(len(matches), self.max_candidates, dtype=torch.int32, device=self.device)
-                # for i, match in enumerate(matches):
-                #     top_cand_logits_shape[i] = torch.from_numpy(match.distances.astype(np.float32))
-                #     top_cand_indices_shape[i] = torch.from_numpy(match.keys.astype(np.int32))
+                # (num_mentions, max_candidates)
+                cand_logits = torch.matmul(mention_embeddings, self.corpus_embeddings.t())
+                top_cand_logits_shape, top_cand_indices_shape = cand_logits.topk(self.max_candidates, dim=-1, sorted=True)
                 
                 # (batch_size, num_mentions, max_candidates)
                 top_cand_logits = torch.zeros(
@@ -359,7 +296,6 @@ class ELQ(EntityLinking):
         cls, 
         model_path: str,
         entity_corpus_path: str,
-        index_config: Optional[IndexConfig] = None, 
         precomputed_entity_corpus_index_path: Optional[str] = None,
         precomputed_entity_corpus_tokens_path: Optional[str] = None,
         precomputed_entity_corpus_embeddings_path: Optional[str] = None,
@@ -372,7 +308,6 @@ class ELQ(EntityLinking):
             config=config,
             entity_corpus_path=entity_corpus_path,
             max_candidates=max_candidates,
-            index_config=index_config,
             precomputed_entity_corpus_index_path=precomputed_entity_corpus_index_path,
             precomputed_entity_corpus_tokens_path=precomputed_entity_corpus_tokens_path,
             precomputed_entity_corpus_embeddings_path=precomputed_entity_corpus_embeddings_path,
