@@ -51,7 +51,7 @@ class ReFinED(EntityLinking):
 
         _docs: List[_Doc] = self.refined.process_text_batch(
             texts=[d.text for d in passages],
-            spanss=[[_Span(text=span.surface_form, start=span.start, ln=span.end - span.start) for span in d.entities] for d in passages] if passages[0].mention_spans is not None else None,
+            spanss=[[_Span(text=span.surface_form, start=span.start, ln=span.end - span.start) for span in d.entities] for d in passages] if passages[0].spans is not None else None,
             max_batch_size=batch_size,
         )
 
@@ -87,6 +87,6 @@ if __name__ == "__main__":
     passages = el_model(texts)
     for passage in passages:
         print(passage.text)
-        for span in passage.mention_spans:
+        for span in passage.spans:
             print(f"\t{span}")
         print("-" * 100)

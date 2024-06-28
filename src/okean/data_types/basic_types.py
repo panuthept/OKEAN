@@ -44,7 +44,7 @@ class Passage(BaseDataType):
     text: str
     logit: Optional[float|FloatTensor] = None
     confident: Optional[float|FloatTensor] = None
-    mention_spans: Optional[List[Span]] = None
+    spans: Optional[List[Span]] = None
     relations: Optional[List[Dict[str, Any]]] = None
 
     def __repr__(self) -> str:

@@ -5,8 +5,8 @@ import torch
 from tqdm import tqdm
 from time import time
 from dataclasses import dataclass
-from typing import List, Optional
 from okean.utilities.readers import load_entity_corpus
+from typing import List, Dict, Any, Union, Tuple, Optional
 from okean.data_types.basic_types import Passage, Span, Entity
 from okean.utilities.general import texts_to_passages, pad_1d_sequence
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
@@ -76,7 +76,7 @@ class ELQ(EntityLinking):
         elif precomputed_entity_corpus_tokens_path and os.path.exists(precomputed_entity_corpus_tokens_path):
             print("Loading precomputed entity corpus tokens...")
             self.corpus_tokens = torch.load(precomputed_entity_corpus_tokens_path)
-        print("Done Loading precomputed entity corpus.")
+        print("Done.")
 
     def _precompute_entity_corpus_tokens(
             self, 
@@ -126,64 +126,58 @@ class ELQ(EntityLinking):
     def _input_preprocessing(
             self,
             passages: List[Passage],
-            batch_size: int = 8,
-    ) -> DataLoader:
+    ) -> List[torch.Tensor]:
         # Tokenize samples
         max_seq_len = 0
-        encoded_samples = []
+        encoded_inputs = []
         offset_mappings = []
         for passage in passages:
             tokenizer_output = self.tokenizer(passage.text, return_offsets_mapping=True)
             tokenizer_output["offset_mapping"] = [[start, end] for start, end in tokenizer_output["offset_mapping"]]
 
-            encoded_sample = [101] + tokenizer_output["input_ids"][1:-1][:self.config.max_context_length - 2] + [102]
+            encoded_input = [101] + tokenizer_output["input_ids"][1:-1][:self.config.max_context_length - 2] + [102]
             offset_mapping = [[0, 0]] + tokenizer_output["offset_mapping"][1:-1][:self.config.max_context_length - 2] + [[0, 0]]
-            max_seq_len = max(len(encoded_sample), max_seq_len)
+            max_seq_len = max(len(encoded_input), max_seq_len)
             
-            encoded_samples.append(encoded_sample)
+            encoded_inputs.append(encoded_input)
             offset_mappings.append(offset_mapping)
 
         # Pad samples
-        padded_encoded_samples = pad_1d_sequence(encoded_samples, pad_value=0, pad_length=max_seq_len)
-        padded_offset_mappings = pad_1d_sequence(offset_mappings, pad_value=[0, 0], pad_length=max_seq_len)
+        encoded_inputs = pad_1d_sequence(encoded_inputs, pad_value=0, pad_length=max_seq_len)
+        offset_mappings = pad_1d_sequence(offset_mappings, pad_value=[0, 0], pad_length=max_seq_len)
+        return torch.tensor(encoded_inputs), torch.tensor(offset_mappings)
+    
+    def _inference(
+            self,
+            passages: List[Passage],
+            encoded_samples: torch.Tensor,
+            offset_mappings: torch.Tensor,
+            runtimes: Dict[str, float],
+            batch_size: int = 8,
+            return_candidates: bool = False,
+            return_metadata: List[str]|str|bool = False,
+    ) -> Tuple[Passage, Any]:
+        # Copy input passages
+        passages: List[Passage] = copy.deepcopy(passages)
+        for passage in passages:
+            passage.spans = []
 
         # Cast to tensor
-        tensor_data_tuple = [torch.tensor(padded_encoded_samples), torch.tensor(padded_offset_mappings)]
+        tensor_data_tuple = [torch.tensor(encoded_samples), torch.tensor(offset_mappings)]
         tensor_data = TensorDataset(*tensor_data_tuple)
         sampler = SequentialSampler(tensor_data)
         dataloader = DataLoader(
             tensor_data, sampler=sampler, batch_size=batch_size
         )
-        return dataloader
 
-    def __call__(
-            self, 
-            texts: List[str]|str = None, 
-            passages: List[Passage]|Passage = None,
-            batch_size: int = 8,
-            return_candidates: bool = False,
-            return_metadata: bool = False,
-    ) -> EntityLinkingResponse:
-        runtimes = {
-            "input_preprocessing": 0.0,
-            "inference": {
-                "encoding": 0.0,
-                "search": 0.0,
-                "post_processing": 0.0,
-            },
-        }
+        metadata_keys = None
+        if isinstance(return_metadata, str):
+            metadata_keys = [return_metadata]
+            return_metadata = True
+        elif isinstance(return_metadata, list):
+            metadata_keys = return_metadata
+            return_metadata = True
 
-        init_time = time()
-        passages: List[Passage] = texts_to_passages(texts=texts, passages=passages)
-        output_passages: List[Passage] = copy.deepcopy(passages)
-        for passage in output_passages:
-            passage.mention_spans = []
-        
-        # Prepare input data
-        dataloader = self._input_preprocessing(passages=passages, batch_size=batch_size)
-        runtimes["input_preprocessing"] = time() - init_time
-
-        # Inference
         self.corpus_embeddings = self.corpus_embeddings.to(self.device)
         for batch in dataloader:
             batch = tuple(t.to(self.device) for t in batch)
@@ -252,9 +246,9 @@ class ELQ(EntityLinking):
 
                     span_start = offset_mappings[passage_idx][pred_mention_bounds[idx][0]][0]
                     span_end = offset_mappings[passage_idx][pred_mention_bounds[idx][1]][1]
-                    span_text = output_passages[passage_idx].text[span_start:span_end]
+                    span_text = passages[passage_idx].text[span_start:span_end]
 
-                    output_passages[passage_idx].mention_spans.append(
+                    passages[passage_idx].spans.append(
                         Span(
                             start=span_start,
                             end=span_end,
@@ -262,17 +256,17 @@ class ELQ(EntityLinking):
                             logit=pred_mention_logits[idx],
                             confident=pred_mention_confs[idx],
                             entity=Entity(
-                                identifier=self.corpus_contents[pred_cand_indices[idx][0]]["id"],
+                                identifier=pred_cand_indices[idx][0],
                                 logit=pred_cand_logits[idx][0],
                                 confident=pred_cand_confs[idx][0],
-                                metadata=self.corpus_contents[pred_cand_indices[idx][0]] if return_metadata else None,
+                                metadata={k: self.corpus_contents[pred_cand_indices[idx][0]][k] for k in metadata_keys} if return_metadata else None,
                             ),
                             candidates=[
                                 Entity(
                                     identifier=pred_cand_indices[idx][cand_idx],
                                     logit=pred_cand_logits[idx][cand_idx],
                                     confident=pred_cand_confs[idx][cand_idx],
-                                    metadata=self.corpus_contents[pred_cand_indices[idx][cand_idx]] if return_metadata else None,
+                                    metadata={k: self.corpus_contents[pred_cand_indices[idx][cand_idx]][k] for k in metadata_keys} if return_metadata else None,
                                 )
                             for cand_idx in range(self.max_candidates)] if return_candidates else None,
                         )
@@ -282,14 +276,49 @@ class ELQ(EntityLinking):
 
         # Sort entities by span start
         init_time = time()
-        output_passages = [
+        passages = [
             Passage(
                 text=passage.text,
-                mention_spans=sorted(passage.mention_spans, key=lambda x: x.start),
+                spans=sorted(passage.spans, key=lambda x: x.start),
             )
-        for passage in output_passages]
+        for passage in passages]
         runtimes["inference"]["post_processing"] = time() - init_time
-        return EntityLinkingResponse(passages=output_passages, runtimes=runtimes) 
+        return passages, runtimes
+
+    def __call__(
+            self, 
+            texts: List[str]|str = None, 
+            passages: List[Passage]|Passage = None,
+            batch_size: int = 8,
+            return_candidates: bool = False,
+            return_metadata: List[str]|str|bool = False,
+    ) -> EntityLinkingResponse:
+        runtimes = {
+            "input_preprocessing": 0.0,
+            "inference": {
+                "encoding": 0.0,
+                "search": 0.0,
+                "post_processing": 0.0,
+            },
+        }
+
+        # Prepare input data
+        init_time = time()
+        passages: List[Passage] = texts_to_passages(texts=texts, passages=passages)
+        encoded_inputs, offset_mappings = self._input_preprocessing(passages=passages)
+        runtimes["input_preprocessing"] = time() - init_time
+
+        # Inference
+        passages, runtimes = self._inference(
+            passages, 
+            encoded_inputs, 
+            offset_mappings, 
+            runtimes=runtimes,
+            batch_size=batch_size,
+            return_candidates=return_candidates,
+            return_metadata=return_metadata
+        )
+        return EntityLinkingResponse(passages=passages, runtimes=runtimes) 
 
     @classmethod
     def from_pretrained(
@@ -337,7 +366,7 @@ if __name__ == "__main__":
         "The Eiffel Tower is located in Paris.",
     ]
 
-    response = model(texts=texts, return_candidates=True)
+    response = model(texts=texts, return_candidates=True, return_metadata=["id"])
     print(response.passages)
     print(response.runtimes)
 
