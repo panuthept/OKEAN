@@ -247,10 +247,10 @@ class ELQ(EntityLinking):
 
                 pred_mention_masks = (mention_logits > 0).nonzero(as_tuple=True)
                 # print(f"pred_mention_masks:\n{pred_mention_masks}")
-                # (batch_size, num_pred_mentions)
+                # (num_pred_mentions, )
                 pred_mention_bounds = mention_bounds[pred_mention_masks]
                 pred_combined_scores = combined_scores[pred_mention_masks]
-                # (batch_size, num_pred_mentions, max_candidates)
+                # (num_pred_mentions, max_candidates)
                 pred_cand_logits = top_cand_logits[pred_mention_masks]
                 pred_cand_indices = top_cand_indices[pred_mention_masks]
                 # print(f"pred_mention_bounds:\n{pred_mention_bounds}\n{pred_mention_bounds.size()}")
@@ -283,7 +283,6 @@ class ELQ(EntityLinking):
                             entities=[
                                 Entity(
                                     identifier=pred_cand_indices[idx][cand_idx],
-                                    logit=pred_cand_logits[idx][cand_idx],
                                     logit=pred_cand_logits[idx][cand_idx],
                                     # metadata=self.corpus_contents[pred_cand_indices[idx][cand_idx]],
                                 )
