@@ -439,6 +439,7 @@ if __name__ == "__main__":
             text="The Eiffel Tower is located in Paris.",
             spans=[
                 Span(start=4, end=16, surface_form="Eiffel Tower"),
+                Span(start=31, end=36, surface_form="Paris"),
             ]
         ),
     ]
