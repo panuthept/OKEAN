@@ -292,7 +292,7 @@ class ELQ(EntityLinking):
                 _, sorted_indices = pred_combined_scores.sort(descending=True)
 
                 pred_tokens_mask = torch.zeros_like(context_input)
-                print(f"input: {self.tokenizer.convert_ids_to_tokens(context_input)}")
+                print(f"input: {self.tokenizer.convert_ids_to_tokens(context_input[0])}")
                 print(f"pred_tokens_mask: {pred_tokens_mask}")
                 for idx in sorted_indices:
                     passage_idx = pred_mention_masks[0][idx]
