@@ -233,10 +233,14 @@ class ELQ(EntityLinking):
                     # matches: Union[BatchMatches, Matches] = search(
                     #     self.corpus_embeddings.numpy(), mention_embeddings.numpy(), count=self.max_candidates, metric="ip", exact=True
                     # )
+                    # if isinstance(matches, Matches):
+                    #     matches = [matches]
                 else:
                     matches: Union[BatchMatches, Matches] = self.index.search(mention_embeddings.numpy(), count=self.max_candidates)
                     if isinstance(matches, Matches):
                         matches = [matches]
+
+                
 
                 # (batch_size, num_mentions, max_candidates)
                 top_cand_logits = torch.zeros(
@@ -342,8 +346,7 @@ if __name__ == "__main__":
         ),
         use_fp16=False,
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
-        precomputed_entity_corpus_tokens_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus/tokens.pt",
-        precomputed_entity_corpus_embeddings_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus/embeddings.pt",
+        precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
     )
     # model.precompute_entity_corpus(save_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus")
 
