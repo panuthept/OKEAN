@@ -221,25 +221,31 @@ class ELQ(EntityLinking):
 
                 # Get mention embeddings
                 mention_embeddings = mention_embeddings[mention_masks]
+                print(f"mention_embeddings: {mention_embeddings.size()}")
 
                 # Retrieve candidates
                 if self.index is None:
-                    cand_logits, _, _ = self.model.score_candidate(
-                        context_input, None,
-                        text_encs=mention_embeddings,
-                        cand_encs=self.corpus_embeddings.to(self.device),
-                    )
-                    top_cand_logits_shape, top_cand_indices_shape = cand_logits.topk(self.max_candidates, dim=-1, sorted=True)
-                    # matches: Union[BatchMatches, Matches] = search(
-                    #     self.corpus_embeddings.numpy(), mention_embeddings.numpy(), count=self.max_candidates, metric="ip", exact=True
+                    # cand_logits, _, _ = self.model.score_candidate(
+                    #     context_input, None,
+                    #     text_encs=mention_embeddings,
+                    #     cand_encs=self.corpus_embeddings.to(self.device),
                     # )
-                    # if isinstance(matches, Matches):
-                    #     matches = [matches]
+                    # top_cand_logits_shape, top_cand_indices_shape = cand_logits.topk(self.max_candidates, dim=-1, sorted=True)
+                    matches: Union[BatchMatches, Matches] = search(
+                        self.corpus_embeddings.numpy(), mention_embeddings.numpy(), count=self.max_candidates, metric="ip", exact=True
+                    )
+                    if isinstance(matches, Matches):
+                        matches = [matches]
                 else:
                     matches: Union[BatchMatches, Matches] = self.index.search(mention_embeddings.numpy(), count=self.max_candidates)
                     if isinstance(matches, Matches):
                         matches = [matches]
 
+                top_cand_logits_shape = []
+                top_cand_indices_shape = []
+                for match in matches:
+                    top_cand_logits_shape.append(match.distances)
+                    top_cand_indices_shape.append(match.keys)
                 
 
                 # (batch_size, num_mentions, max_candidates)
