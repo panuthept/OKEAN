@@ -243,6 +243,7 @@ class ELQ(EntityLinking):
                     mention_logits = embeddings["mention_logits"]   # (batch_size, num_mentions)
                 else:
                     mention_logits = torch.full_like(mention_masks, float("inf"), dtype=torch.float32, device=self.device)
+                    mention_logits[mention_masks] = torch.tensor(float("-inf"))
 
                 # Get mention embeddings
                 mention_embeddings = mention_embeddings[mention_masks]
