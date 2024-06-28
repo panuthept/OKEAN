@@ -4,16 +4,17 @@ import json
 import torch
 import numpy as np
 from tqdm import tqdm
+from time import time
 from dataclasses import dataclass
 from typing import List, Optional, Union
 from okean.data_types.config_types import IndexConfig
 from okean.utilities.readers import load_entity_corpus
 from usearch.index import Index, BatchMatches, Matches, search
 from okean.data_types.basic_types import Passage, Span, Entity
-from okean.modules.entity_linking.baseclass import EntityLinking
 from okean.utilities.general import texts_to_passages, pad_1d_sequence
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 from okean.packages.elq_package.biencoder.biencoder import BiEncoderRanker
+from okean.modules.entity_linking.baseclass import EntityLinking, EntityLinkingResponse
 from okean.packages.elq_package.biencoder.data_process import get_candidate_representation
 
 
@@ -199,7 +200,17 @@ class ELQ(EntityLinking):
             batch_size: int = 8,
             return_candidates: bool = False,
             return_metadata: bool = False,
-    ) -> List[Passage]:
+    ) -> EntityLinkingResponse:
+        runtimes = {
+            "input_preprocessing": 0.0,
+            "inference": {
+                "encoding": 0.0,
+                "search": 0.0,
+                "post_processing": 0.0,
+            },
+        }
+
+        init_time = time()
         passages: List[Passage] = texts_to_passages(texts=texts, passages=passages)
         output_passages: List[Passage] = copy.deepcopy(passages)
         for passage in output_passages:
@@ -207,6 +218,7 @@ class ELQ(EntityLinking):
         
         # Prepare input data
         dataloader = self._input_preprocessing(passages=passages, batch_size=batch_size)
+        runtimes["input_preprocessing"] = time() - init_time
 
         # Inference
         for batch in dataloader:
@@ -215,6 +227,7 @@ class ELQ(EntityLinking):
             offset_mappings = batch[1]
             with torch.no_grad():
                 # Encode input text
+                init_time = time()
                 embeddings = self.model.encode_context(context_input)
                 mention_embeddings = embeddings["mention_reps"]
                 mention_masks = embeddings["mention_masks"]
@@ -223,8 +236,10 @@ class ELQ(EntityLinking):
 
                 # Get mention embeddings
                 mention_embeddings = mention_embeddings[mention_masks]
+                runtimes["inference"]["encoding"] += time() - init_time
 
                 # Retrieve candidates
+                init_time = time()
                 if self.index is None:
                     # cand_logits, _, _ = self.model.score_candidate(
                     #     context_input, None,
@@ -265,7 +280,10 @@ class ELQ(EntityLinking):
                     mention_logits.size(0), mention_logits.size(1), self.max_candidates
                 ).to(self.device, top_cand_indices_shape.dtype)
                 top_cand_indices[mention_masks] = top_cand_indices_shape
+                runtimes["inference"]["search"] += time() - init_time
 
+                # Post-processing
+                init_time = time()
                 # (batch_size, num_mentions)
                 combined_scores = torch.log_softmax(top_cand_logits, -1)[:, :, 0] + torch.sigmoid(mention_logits).log()
 
@@ -321,15 +339,18 @@ class ELQ(EntityLinking):
                         )
                     )
                     pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]] = 1
+                runtimes["inference"]["post_processing"] += time() - init_time
 
         # Sort entities by span start
+        init_time = time()
         output_passages = [
             Passage(
                 text=passage.text,
                 mention_spans=sorted(passage.mention_spans, key=lambda x: x.start),
             )
         for passage in output_passages]
-        return output_passages 
+        runtimes["post_processing"] = time() - init_time
+        return EntityLinkingResponse(passages=output_passages, runtimes=runtimes) 
 
     @classmethod
     def from_pretrained(
@@ -359,8 +380,6 @@ class ELQ(EntityLinking):
     
 
 if __name__ == "__main__":
-    from time import time
-
     model = ELQ(
         config=ELQConfig(
             bert_model = "bert-large-uncased",
@@ -381,10 +400,9 @@ if __name__ == "__main__":
         "The Eiffel Tower is located in Paris.",
     ]
 
-    start_time = time()
-    passages = model(texts=texts)
-    print(passages)
-    print(time() - start_time)
+    response = model(texts=texts)
+    print(response.passages)
+    print(response.runtimes)
 
     # model = ELQ.from_pretrained(
     #     model_path="./data/models/entity_linking/elq_wikipedia",
