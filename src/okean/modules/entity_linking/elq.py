@@ -411,7 +411,7 @@ if __name__ == "__main__":
     # model.save_pretrained(save_path="./data/models/entity_linking/elq_wikipedia_2")
 
     model = ELQ.from_pretrained(
-        model_path="./data/models/entity_linking/elq_wikipedia_2",
+        model_path="./data/models/entity_linking/elq_wikipedia",
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
         precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
         max_candidates=30,
