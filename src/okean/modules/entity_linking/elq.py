@@ -152,8 +152,9 @@ class ELQ(EntityLinking):
         offset_mappings = []
         for passage in passages:
             tokenizer_output = self.tokenizer(passage.text, return_offsets_mapping=True)
+            tokenizer_output["offset_mapping"] = [[start, end] for start, end in tokenizer_output["offset_mapping"]]
             encoded_sample = [101] + tokenizer_output["input_ids"][1:-1][:self.config.max_context_length - 2] + [102]
-            offset_mapping = [(0, 0)] + tokenizer_output["offset_mapping"][1:-1][:self.config.max_context_length - 2] + [(0, 0)]
+            offset_mapping = [[0, 0]] + tokenizer_output["offset_mapping"][1:-1][:self.config.max_context_length - 2] + [[0, 0]]
             max_seq_len = max(len(encoded_sample), max_seq_len)
             encoded_samples.append(encoded_sample)
             offset_mappings.append(offset_mapping)
@@ -162,7 +163,7 @@ class ELQ(EntityLinking):
 
         # Pad samples
         padded_encoded_samples = pad_1d_sequence(encoded_samples, pad_value=0, pad_length=max_seq_len)
-        padded_offset_mappings = pad_1d_sequence(offset_mappings, pad_value=(0, 0), pad_length=max_seq_len)
+        padded_offset_mappings = pad_1d_sequence(offset_mappings, pad_value=[0, 0], pad_length=max_seq_len)
         print(f"padded_encoded_samples:\n{padded_encoded_samples}\n{len(padded_encoded_samples)}")
         print(f"padded_offset_mappings:\n{padded_offset_mappings}\n{len(padded_offset_mappings)}")
 
@@ -253,6 +254,7 @@ class ELQ(EntityLinking):
                 # (num_pred_mentions, max_candidates)
                 pred_cand_logits = top_cand_logits[pred_mention_masks]
                 pred_cand_indices = top_cand_indices[pred_mention_masks]
+                pred_cand_confs = torch.softmax(pred_cand_logits, -1)
                 # print(f"pred_mention_bounds:\n{pred_mention_bounds}\n{pred_mention_bounds.size()}")
                 # print(f"pred_combined_scores:\n{pred_combined_scores}\n{pred_combined_scores.size()}")
                 # print(f"pred_cand_logits:\n{pred_cand_logits}\n{pred_cand_logits.size()}")
@@ -284,6 +286,7 @@ class ELQ(EntityLinking):
                                 Entity(
                                     identifier=pred_cand_indices[idx][cand_idx],
                                     logit=pred_cand_logits[idx][cand_idx],
+                                    confident=pred_cand_confs[idx][cand_idx],
                                     # metadata=self.corpus_contents[pred_cand_indices[idx][cand_idx]],
                                 )
                             for cand_idx in range(self.max_candidates)]
