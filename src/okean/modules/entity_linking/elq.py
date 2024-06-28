@@ -148,6 +148,7 @@ class ELQ(EntityLinking):
         mention_masks = None
         for passage in passages:
             tokenizer_output = self.tokenizer(passage.text, return_offsets_mapping=True)
+            print(tokenizer_output)
             tokenizer_output["offset_mapping"] = [[start, end] for start, end in tokenizer_output["offset_mapping"]]
 
             encoded_input = [101] + tokenizer_output["input_ids"][1:-1][:self.config.max_context_length - 2] + [102]
@@ -295,7 +296,7 @@ class ELQ(EntityLinking):
                 print(f"pred_tokens_mask: {pred_tokens_mask}")
                 for idx in sorted_indices:
                     passage_idx = pred_mention_masks[0][idx]
-                    if pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]].sum() >= 1:
+                    if pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1] + 1].sum() >= 1:
                         continue
 
                     span_start = offset_mappings[passage_idx][pred_mention_bounds[idx][0]][0]   # Start character index
@@ -322,7 +323,7 @@ class ELQ(EntityLinking):
                             for cand_idx in range(self.max_candidates)] if return_candidates else None,
                         )
                     )
-                    pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]] = 1
+                    pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1] + 1] = 1
                     print(f"pred_mention_bounds: {pred_mention_bounds[idx]}")
                     print(f"pred_tokens_mask: {pred_tokens_mask[passage_idx]}")
                     print("-" * 100)
