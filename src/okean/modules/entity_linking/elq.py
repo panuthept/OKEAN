@@ -158,17 +158,13 @@ class ELQ(EntityLinking):
             max_seq_len = max(len(encoded_sample), max_seq_len)
             encoded_samples.append(encoded_sample)
             offset_mappings.append(offset_mapping)
-        print(f"encoded_samples:\n{encoded_samples}\n{len(encoded_samples)}")
-        print(f"offset_mappings:\n{offset_mappings}\n{len(offset_mappings)}")
 
         # Pad samples
         padded_encoded_samples = pad_1d_sequence(encoded_samples, pad_value=0, pad_length=max_seq_len)
         padded_offset_mappings = pad_1d_sequence(offset_mappings, pad_value=[0, 0], pad_length=max_seq_len)
-        print(f"padded_encoded_samples:\n{padded_encoded_samples}\n{len(padded_encoded_samples)}")
-        print(f"padded_offset_mappings:\n{padded_offset_mappings}\n{len(padded_offset_mappings)}")
 
         # Cast to tensor
-        tensor_data_tuple = torch.tensor([padded_encoded_samples, padded_offset_mappings])
+        tensor_data_tuple = [torch.tensor(padded_encoded_samples), torch.tensor(padded_offset_mappings)]
         tensor_data = TensorDataset(*tensor_data_tuple)
         sampler = SequentialSampler(tensor_data)
         dataloader = DataLoader(
