@@ -221,6 +221,7 @@ class ELQ(EntityLinking):
         runtimes["input_preprocessing"] = time() - init_time
 
         # Inference
+        self.corpus_embeddings = self.corpus_embeddings.to(self.device)
         for batch in dataloader:
             batch = tuple(t.to(self.device) for t in batch)
             context_input = batch[0]
