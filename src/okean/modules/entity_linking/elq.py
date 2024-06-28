@@ -241,33 +241,33 @@ class ELQ(EntityLinking):
                 # Retrieve candidates
                 init_time = time()
                 if self.index is None:
-                    # cand_logits, _, _ = self.model.score_candidate(
-                    #     context_input, None,
-                    #     text_encs=mention_embeddings,
-                    #     cand_encs=self.corpus_embeddings.to(self.device),
-                    # )
-                    # top_cand_logits_shape, top_cand_indices_shape = cand_logits.topk(self.max_candidates, dim=-1, sorted=True)
-                    # print(f"top_cand_logits_shape: {top_cand_logits_shape.size()}")
-                    matches: Union[BatchMatches, Matches] = search(
-                        self.corpus_embeddings.numpy(), 
-                        mention_embeddings.cpu().numpy(), 
-                        count=self.max_candidates, 
-                        metric="ip", 
-                        exact=True,
+                    cand_logits, _, _ = self.model.score_candidate(
+                        context_input, None,
+                        text_encs=mention_embeddings,
+                        cand_encs=self.corpus_embeddings.to(self.device),
                     )
+                    top_cand_logits_shape, top_cand_indices_shape = cand_logits.topk(self.max_candidates, dim=-1, sorted=True)
+                    # print(f"top_cand_logits_shape: {top_cand_logits_shape.size()}")
+                    # matches: Union[BatchMatches, Matches] = search(
+                    #     self.corpus_embeddings.numpy(), 
+                    #     mention_embeddings.cpu().numpy(), 
+                    #     count=self.max_candidates, 
+                    #     metric="ip", 
+                    #     exact=True,
+                    # )
                 else:
                     matches: Union[BatchMatches, Matches] = self.index.search(
                         mention_embeddings.cpu().numpy(), 
                         count=self.max_candidates,
                     )
-                if isinstance(matches, Matches):
-                    matches = [matches]
+                # if isinstance(matches, Matches):
+                #     matches = [matches]
 
-                top_cand_logits_shape = torch.zeros(len(matches), self.max_candidates, dtype=torch.float32, device=self.device)
-                top_cand_indices_shape = torch.zeros(len(matches), self.max_candidates, dtype=torch.int32, device=self.device)
-                for i, match in enumerate(matches):
-                    top_cand_logits_shape[i] = torch.from_numpy(match.distances.astype(np.float32))
-                    top_cand_indices_shape[i] = torch.from_numpy(match.keys.astype(np.int32))
+                # top_cand_logits_shape = torch.zeros(len(matches), self.max_candidates, dtype=torch.float32, device=self.device)
+                # top_cand_indices_shape = torch.zeros(len(matches), self.max_candidates, dtype=torch.int32, device=self.device)
+                # for i, match in enumerate(matches):
+                #     top_cand_logits_shape[i] = torch.from_numpy(match.distances.astype(np.float32))
+                #     top_cand_indices_shape[i] = torch.from_numpy(match.keys.astype(np.int32))
                 
                 # (batch_size, num_mentions, max_candidates)
                 top_cand_logits = torch.zeros(
