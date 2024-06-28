@@ -221,7 +221,7 @@ class ELQ(EntityLinking):
             metadata_keys = return_metadata
             return_metadata = True
 
-        # self.corpus_embeddings = self.corpus_embeddings.to(self.device)
+        self.corpus_embeddings = self.corpus_embeddings.to(self.device)
         for batch in dataloader:
             batch = tuple(t.to(self.device) for t in batch)
             context_input = batch[0]
@@ -408,9 +408,9 @@ if __name__ == "__main__":
         ),
         use_fp16=False,
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
-        # precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
+        precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
     )
-    # model.precompute_entity_corpus(save_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus")
+    model.precompute_entity_corpus(save_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus")
 
     # texts = [
     #     "Barack Obama is the former president of the United States.",
