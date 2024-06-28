@@ -44,7 +44,7 @@ class ELQ(EntityLinking):
             path_to_model: Optional[str] = None,
             max_candidates: int = 30,
             device: Optional[str] = None,
-            use_fp16: bool = True,
+            use_fp16: bool = False,
     ):
         self.config = config
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else torch.device(device)

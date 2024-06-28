@@ -52,17 +52,17 @@ from okean.modules.entity_linking.refined import ReFinED
 text = "Which member of Black Eyed Peas appeared in Poseidon?"
 
 el_model = ELQ.from_pretrained(
-  model_path="<PATH_TO_MODEL>",
+  model_name_or_path="panuthept/okean-elq-wikipedia",
   entity_corpus_path="<PATH_TO_CORPUS>",
   precomputed_entity_corpus_path="<PATH_TO_PRECOMPUTED_CORPUS>",
 )
 
 response = el_model(text)
+print(response.passages)
 >> Passage(
   text="Which member of Black Eyed Peas appeared in Poseidon?",
   entities=[
-    Span(start=16, end=31, text="Black Eyed Peas", entity=Entity(identifier="Q134541")),
-    Span(start=44, end=52, text="Poseidon", entity=Entity(identifier="Q906633")),
+    Span(start=16, end=31, surface_form="Black Eyed Peas", confident=0.5956, entity=Entity(identifier=110826, confident=1.0, metadata={'id': {'wikipedia': '210453', 'wikidata': 'Q134541'}})),
   ]
 )
 ```
