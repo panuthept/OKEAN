@@ -247,6 +247,8 @@ class ELQ(EntityLinking):
                 for match in matches:
                     top_cand_logits_shape.append(match.distances)
                     top_cand_indices_shape.append(match.keys)
+                print(f"top_cand_logits_shape: {top_cand_logits_shape}")
+                print(f"top_cand_indices_shape: {top_cand_indices_shape}")
                 top_cand_logits_shape = torch.tensor(top_cand_logits_shape).to(self.device)
                 top_cand_indices_shape = torch.tensor(top_cand_indices_shape).to(self.device)
                 print(f"top_cand_logits_shape: {top_cand_logits_shape.size()}")
