@@ -366,7 +366,7 @@ if __name__ == "__main__":
         "The Eiffel Tower is located in Paris.",
     ]
 
-    response = model(texts=texts, return_candidates=True, return_metadata=["id"])
+    response = model(texts=texts, return_candidates=False, return_metadata=["id"])
     print(response.passages)
     print(response.runtimes)
 
