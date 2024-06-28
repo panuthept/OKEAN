@@ -379,6 +379,7 @@ class ELQ(EntityLinking):
         precomputed_entity_corpus_path: Optional[str] = None,
         max_candidates: int = 30,
         device: Optional[str] = None,
+        data_parallel: bool = False,
         use_fp16: bool = True,
     ):
         config = ELQConfig(**json.load(open(f"{model_path}/config.json")))
@@ -388,6 +389,7 @@ class ELQ(EntityLinking):
             max_candidates=max_candidates,
             precomputed_entity_corpus_path=precomputed_entity_corpus_path,
             device=device,
+            data_parallel=data_parallel,
             use_fp16=use_fp16,
         )
     
@@ -399,8 +401,6 @@ if __name__ == "__main__":
             path_to_model = "./data/models/entity_linking/elq_wikipedia/model.bin",
             max_context_length = 128,
             max_cand_length = 128,
-            data_parallel = False,
-            no_cuda = False,
         ),
         use_fp16=False,
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
