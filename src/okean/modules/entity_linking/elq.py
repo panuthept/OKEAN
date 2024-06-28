@@ -29,9 +29,6 @@ class ELQConfig:
     out_dim: int = 1
     pull_from_layer: int = -1
     add_linear: bool = False
-    freeze_cand_enc: bool = True, 
-    data_parallel: bool = False
-    no_cuda: bool = False
 
     def to_dict(self):
         return self.__dict__
@@ -45,6 +42,7 @@ class ELQ(EntityLinking):
             max_candidates: int = 30,
             precomputed_entity_corpus_path: Optional[str] = None,
             device: Optional[str] = None,
+            data_parallel: bool = False,
             use_fp16: bool = True,
     ):
         self.config = config
@@ -52,8 +50,9 @@ class ELQ(EntityLinking):
         self.max_candidates = max_candidates
         self.precomputed_entity_corpus_path = precomputed_entity_corpus_path
 
-        self.model = BiEncoderRanker(config.to_dict())
-        self.model.to(self.device)
+        param = config.to_dict()
+        param["data_parallel"] = data_parallel
+        self.model = BiEncoderRanker(param, device=device)
         self.model.eval()
         if use_fp16: self.model.model.half()
         self.tokenizer = self.model.tokenizer
@@ -377,9 +376,7 @@ class ELQ(EntityLinking):
         cls, 
         model_path: str,
         entity_corpus_path: str,
-        precomputed_entity_corpus_index_path: Optional[str] = None,
-        precomputed_entity_corpus_tokens_path: Optional[str] = None,
-        precomputed_entity_corpus_embeddings_path: Optional[str] = None,
+        precomputed_entity_corpus_path: Optional[str] = None,
         max_candidates: int = 30,
         device: Optional[str] = None,
         use_fp16: bool = True,
@@ -389,9 +386,7 @@ class ELQ(EntityLinking):
             config=config,
             entity_corpus_path=entity_corpus_path,
             max_candidates=max_candidates,
-            precomputed_entity_corpus_index_path=precomputed_entity_corpus_index_path,
-            precomputed_entity_corpus_tokens_path=precomputed_entity_corpus_tokens_path,
-            precomputed_entity_corpus_embeddings_path=precomputed_entity_corpus_embeddings_path,
+            precomputed_entity_corpus_path=precomputed_entity_corpus_path,
             device=device,
             use_fp16=use_fp16,
         )

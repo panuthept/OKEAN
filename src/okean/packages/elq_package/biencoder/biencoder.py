@@ -548,12 +548,10 @@ class BiEncoderModule(torch.nn.Module):
 
 
 class BiEncoderRanker(torch.nn.Module):
-    def __init__(self, params, shared=None):
+    def __init__(self, params, device: str = None):
         super(BiEncoderRanker, self).__init__()
         self.params = params
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() and not params["no_cuda"] else "cpu"
-        )
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else torch.device(device)
         self.n_gpu = torch.cuda.device_count()
         # init tokenizer
         self.NULL_IDX = 0
