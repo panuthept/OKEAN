@@ -197,6 +197,7 @@ class ELQ(EntityLinking):
             texts: List[str]|str = None, 
             passages: List[Passage]|Passage = None,
             batch_size: int = 8,
+            return_candidates: bool = False,
             return_metadata: bool = False,
     ) -> List[Passage]:
         passages: List[Passage] = texts_to_passages(texts=texts, passages=passages)
@@ -309,14 +310,14 @@ class ELQ(EntityLinking):
                                 confident=pred_cand_confs[idx][0],
                                 metadata=self.corpus_contents[pred_cand_indices[idx][0]] if return_metadata else None,
                             ),
-                            candidate_entities=[
+                            candidates=[
                                 Entity(
                                     identifier=pred_cand_indices[idx][cand_idx],
                                     logit=pred_cand_logits[idx][cand_idx],
                                     confident=pred_cand_confs[idx][cand_idx],
                                     metadata=self.corpus_contents[pred_cand_indices[idx][cand_idx]] if return_metadata else None,
                                 )
-                            for cand_idx in range(self.max_candidates)],
+                            for cand_idx in range(self.max_candidates)] if return_candidates else None,
                         )
                     )
                     pred_tokens_mask[passage_idx, pred_mention_bounds[idx][0]:pred_mention_bounds[idx][1]] = 1

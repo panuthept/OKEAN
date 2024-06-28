@@ -28,7 +28,7 @@ class Span(BaseDataType):
     logit: Optional[float|FloatTensor] = None
     confident: Optional[float|FloatTensor] = None
     entity: Optional[Entity] = None
-    candidate_entities: Optional[List[Entity]] = None
+    candidates: Optional[List[Entity]] = None
 
     def __repr__(self) -> str:
         attributes = ", ".join([f"{k}='{v}'" if isinstance(v, str) else f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
