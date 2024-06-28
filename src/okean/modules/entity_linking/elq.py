@@ -161,6 +161,8 @@ class ELQ(EntityLinking):
         # Pad samples
         padded_encoded_samples = pad_1d_sequence(encoded_samples, pad_value=0, pad_length=max_seq_len)
         padded_offset_mappings = pad_1d_sequence(offset_mappings, pad_value=(0, 0), pad_length=max_seq_len)
+        print(f"padded_encoded_samples:\n{padded_encoded_samples}\n{padded_encoded_samples.size()}")
+        print(f"padded_offset_mappings:\n{padded_offset_mappings}\n{padded_offset_mappings.size()}")
 
         # Cast to tensor
         tensor_data_tuple = torch.tensor([padded_encoded_samples, padded_offset_mappings])
