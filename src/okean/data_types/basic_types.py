@@ -7,7 +7,6 @@ from okean.data_types.baseclass import BaseDataType
 @dataclass
 class Entity(BaseDataType):
     identifier: str
-    logit: Optional[float|FloatTensor] = None
     confident: Optional[float|FloatTensor] = None
     metadata: Optional[Dict[str, Any]] = None
 
@@ -25,7 +24,6 @@ class Span(BaseDataType):
     start: int
     end: int
     surface_form: str
-    logit: Optional[float|FloatTensor] = None
     confident: Optional[float|FloatTensor] = None
     entity: Optional[Entity] = None
     candidates: Optional[List[Entity]] = None
@@ -42,7 +40,6 @@ class Span(BaseDataType):
 @dataclass
 class Passage(BaseDataType):
     text: str
-    logit: Optional[float|FloatTensor] = None
     confident: Optional[float|FloatTensor] = None
     spans: Optional[List[Span]] = None
     relations: Optional[List[Dict[str, Any]]] = None
@@ -59,7 +56,6 @@ class Passage(BaseDataType):
 @dataclass
 class Document(BaseDataType):
     passages: List[Passage]
-    logit: Optional[float|FloatTensor] = None
     confident: Optional[float|FloatTensor] = None
 
     def __repr__(self) -> str:

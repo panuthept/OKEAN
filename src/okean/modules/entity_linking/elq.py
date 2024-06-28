@@ -5,8 +5,8 @@ import torch
 from tqdm import tqdm
 from time import time
 from dataclasses import dataclass
+from typing import List, Dict, Any, Tuple, Optional
 from okean.utilities.readers import load_entity_corpus
-from typing import List, Dict, Any, Union, Tuple, Optional
 from okean.data_types.basic_types import Passage, Span, Entity
 from okean.utilities.general import texts_to_passages, pad_1d_sequence
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
@@ -81,8 +81,13 @@ class ELQ(EntityLinking):
     def _precompute_entity_corpus_tokens(
             self, 
             save_path: str, 
-            verbose: bool = True
+            verbose: bool = True,
+            overwrite: bool = False,
     ):
+        if os.path.exists(os.path.join(save_path, "tokens.pt")) and not overwrite:
+            print("Precomputed entity corpus tokens is already exist. Set `overwrite=True` to recompute.")
+            return
+        
         titles = [entity["name"] for entity in self.corpus_contents]
         descs = [entity["desc"] for entity in self.corpus_contents]
 
@@ -101,9 +106,14 @@ class ELQ(EntityLinking):
             save_path: str, 
             batch_size: int = 8, 
             verbose: bool = True,
+            overwrite: bool = False,
     ):
+        if os.path.exists(os.path.join(save_path, "embeddings.pt")) and not overwrite:
+            print("Precomputed entity corpus embeddings is already exist. Set `overwrite=True` to recompute.")
+            return
+        
         if self.corpus_tokens is None:
-            self._precompute_entity_corpus_tokens(save_path=save_path, verbose=verbose)
+            self._precompute_entity_corpus_tokens(save_path=save_path, verbose=verbose, overwrite=overwrite)
 
         # Cast to tensor
         tensor_data_tuple = torch.tensor(self.corpus_tokens)
@@ -253,18 +263,15 @@ class ELQ(EntityLinking):
                             start=span_start,
                             end=span_end,
                             surface_form=span_text,
-                            logit=pred_mention_logits[idx],
                             confident=pred_mention_confs[idx],
                             entity=Entity(
                                 identifier=pred_cand_indices[idx][0],
-                                logit=pred_cand_logits[idx][0],
                                 confident=pred_cand_confs[idx][0],
                                 metadata={k: self.corpus_contents[pred_cand_indices[idx][0]][k] for k in metadata_keys} if return_metadata else None,
                             ),
                             candidates=[
                                 Entity(
                                     identifier=pred_cand_indices[idx][cand_idx],
-                                    logit=pred_cand_logits[idx][cand_idx],
                                     confident=pred_cand_confs[idx][cand_idx],
                                     metadata={k: self.corpus_contents[pred_cand_indices[idx][cand_idx]][k] for k in metadata_keys} if return_metadata else None,
                                 )
@@ -359,7 +366,7 @@ if __name__ == "__main__":
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
         precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
     )
-    # model.precompute_entity_corpus(save_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus")
+    model.precompute_entity_corpus(save_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus")
 
     texts = [
         "Barack Obama is the former president of the United States.",
