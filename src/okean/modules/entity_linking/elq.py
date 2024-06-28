@@ -403,6 +403,7 @@ if __name__ == "__main__":
             max_cand_length = 128,
         ),
         use_fp16=False,
+        data_parallel=True,
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
         precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
     )
