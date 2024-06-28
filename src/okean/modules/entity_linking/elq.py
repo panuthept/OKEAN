@@ -139,8 +139,11 @@ class ELQ(EntityLinking):
     ) -> List[torch.Tensor]:
         # Tokenize samples
         max_seq_len = 0
+        max_span_num = 0
         encoded_inputs = []
         offset_mappings = []
+        mention_bounds = None
+        mention_masks = None
         for passage in passages:
             tokenizer_output = self.tokenizer(passage.text, return_offsets_mapping=True)
             tokenizer_output["offset_mapping"] = [[start, end] for start, end in tokenizer_output["offset_mapping"]]
@@ -148,14 +151,37 @@ class ELQ(EntityLinking):
             encoded_input = [101] + tokenizer_output["input_ids"][1:-1][:self.config.max_context_length - 2] + [102]
             offset_mapping = [[0, 0]] + tokenizer_output["offset_mapping"][1:-1][:self.config.max_context_length - 2] + [[0, 0]]
             max_seq_len = max(len(encoded_input), max_seq_len)
-            
+
             encoded_inputs.append(encoded_input)
             offset_mappings.append(offset_mapping)
+
+            if passage.spans is not None:
+                mention_bounds = [] if mention_bounds is None else mention_bounds
+                mention_bound = []
+                for span in passage.spans:
+                    start_token_idx = None
+                    end_token_idx = None
+                    for token_idx, (token_start, token_end) in enumerate(offset_mapping):
+                        if token_start <= span.start:
+                            start_token_idx = token_idx
+
+                        if token_end <= span.end:
+                            end_token_idx = token_idx
+                        else:
+                            break
+                    mention_bound.append([start_token_idx, end_token_idx])
+                max_span_num = max(len(mention_bound), max_span_num)
+            
+                mention_bounds.append(mention_bound)
 
         # Pad samples
         encoded_inputs = pad_1d_sequence(encoded_inputs, pad_value=0, pad_length=max_seq_len)
         offset_mappings = pad_1d_sequence(offset_mappings, pad_value=[0, 0], pad_length=max_seq_len)
-        return torch.tensor(encoded_inputs), torch.tensor(offset_mappings)
+        mention_bounds = pad_1d_sequence(mention_bounds, pad_value=[0, 0], pad_length=max_span_num) if mention_bounds is not None else None
+
+        # Create mention masks
+        mention_masks = [[not (start == 0 and end == 0) for start, end in mention_bounds[i]] for i in range(len(mention_bounds))] if mention_bounds is not None else None
+        return encoded_inputs, offset_mappings, mention_bounds, mention_masks
     
     def _inference(
             self,
@@ -163,6 +189,8 @@ class ELQ(EntityLinking):
             encoded_samples: torch.Tensor,
             offset_mappings: torch.Tensor,
             runtimes: Dict[str, float],
+            mention_bounds: Optional[torch.Tensor] = None,
+            mention_masks: Optional[torch.Tensor] = None,
             batch_size: int = 8,
             return_candidates: bool = False,
             return_metadata: List[str]|str|bool = False,
@@ -174,6 +202,11 @@ class ELQ(EntityLinking):
 
         # Cast to tensor
         tensor_data_tuple = [torch.tensor(encoded_samples), torch.tensor(offset_mappings)]
+        if mention_bounds is not None and mention_masks is not None:
+            tensor_data_tuple = tensor_data_tuple + [
+                torch.tensor(mention_bounds), 
+                torch.tensor(mention_masks)
+            ]
         tensor_data = TensorDataset(*tensor_data_tuple)
         sampler = SequentialSampler(tensor_data)
         dataloader = DataLoader(
@@ -188,19 +221,28 @@ class ELQ(EntityLinking):
             metadata_keys = return_metadata
             return_metadata = True
 
-        self.corpus_embeddings = self.corpus_embeddings.to(self.device)
+        # self.corpus_embeddings = self.corpus_embeddings.to(self.device)
         for batch in dataloader:
             batch = tuple(t.to(self.device) for t in batch)
             context_input = batch[0]
             offset_mappings = batch[1]
+            mention_bounds = batch[2] if len(batch) > 2 else None
+            mention_masks = batch[3] if len(batch) > 2 else None
             with torch.no_grad():
                 # Encode input text
                 init_time = time()
-                embeddings = self.model.encode_context(context_input)
+                embeddings = self.model.encode_context(
+                    context_input,
+                    gold_mention_bounds=mention_bounds,
+                    gold_mention_bounds_mask=mention_masks,
+                )
                 mention_embeddings = embeddings["mention_reps"]
-                mention_masks = embeddings["mention_masks"]
-                mention_logits = embeddings["mention_logits"]   # (batch_size, num_mentions)
-                mention_bounds = embeddings["mention_bounds"]   # (batch_size, num_mentions, 2)
+                mention_masks = embeddings["mention_masks"]         # (batch_size, num_mentions)
+                mention_bounds = embeddings["mention_bounds"]       # (batch_size, num_mentions, 2)
+                if "mention_logits" in embeddings:
+                    mention_logits = embeddings["mention_logits"]   # (batch_size, num_mentions)
+                else:
+                    mention_logits = torch.full_like(mention_masks, float("inf"), dtype=torch.float32, device=self.device)
 
                 # Get mention embeddings
                 mention_embeddings = mention_embeddings[mention_masks]
@@ -312,7 +354,7 @@ class ELQ(EntityLinking):
         # Prepare input data
         init_time = time()
         passages: List[Passage] = texts_to_passages(texts=texts, passages=passages)
-        encoded_inputs, offset_mappings = self._input_preprocessing(passages=passages)
+        encoded_inputs, offset_mappings, mention_bounds, mention_masks = self._input_preprocessing(passages=passages)
         runtimes["input_preprocessing"] = time() - init_time
 
         # Inference
@@ -321,6 +363,8 @@ class ELQ(EntityLinking):
             encoded_inputs, 
             offset_mappings, 
             runtimes=runtimes,
+            mention_bounds=mention_bounds,
+            mention_masks=mention_masks,
             batch_size=batch_size,
             return_candidates=return_candidates,
             return_metadata=return_metadata
@@ -364,16 +408,31 @@ if __name__ == "__main__":
         ),
         use_fp16=False,
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
-        precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
+        # precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
     )
-    model.precompute_entity_corpus(save_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus")
+    # model.precompute_entity_corpus(save_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus")
 
-    texts = [
-        "Barack Obama is the former president of the United States.",
-        "The Eiffel Tower is located in Paris.",
+    # texts = [
+    #     "Barack Obama is the former president of the United States.",
+    #     "The Eiffel Tower is located in Paris.",
+    # ]
+    passages = [
+        Passage(
+            text="Barack Obama is the former president of the United States.", 
+            spans=[
+                Span(start=0, end=12, surface_form="Barack Obama"),
+                Span(start=27, end=57, surface_form="president of the United States"),
+            ]
+        ),
+        Passage(
+            text="The Eiffel Tower is located in Paris.",
+            spans=[
+                Span(start=4, end=16, surface_form="Eiffel Tower"),
+            ]
+        ),
     ]
 
-    response = model(texts=texts, return_candidates=False, return_metadata=["id"])
+    response = model(passages=passages, return_candidates=False, return_metadata=["id"])
     print(response.passages)
     print(response.runtimes)
 
