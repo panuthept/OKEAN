@@ -62,6 +62,7 @@ print(response.passages)
     text="Which member of Black Eyed Peas appeared in Poseidon?",
     entities=[
       Span(start=16, end=31, surface_form="Black Eyed Peas", confident=0.5956, entity=Entity(identifier=110826, confident=1.0, metadata={'id': {'wikipedia': '210453', 'wikidata': 'Q134541'}})),
+      Span(start=44, end=53, surface_form="Poseidon?", confident=0.2635, entity=Entity(identifier=664979, confident=0.9639, metadata={'id': {'wikipedia': '2688309', 'wikidata': 'Q906633'}})),
     ]
   )
 ]

@@ -43,7 +43,7 @@ class ELQ(EntityLinking):
             precomputed_entity_corpus_path: Optional[str] = None,
             path_to_model: Optional[str] = None,
             max_candidates: int = 30,
-            md_threshold: float = 0.5,
+            md_threshold: float = 0.2,
             device: Optional[str] = None,
             use_fp16: bool = False,
     ):
@@ -435,7 +435,7 @@ if __name__ == "__main__":
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
         precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
         max_candidates=30,
-        md_threshold=0.0,
+        md_threshold=0.2,
         use_fp16=False,
     )
     # model.save_pretrained("./data/models/entity_linking/elq_wikipedia")
