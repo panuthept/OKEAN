@@ -71,8 +71,8 @@ class ELQ(EntityLinking):
         if self.precomputed_entity_corpus_path is None:
             return
         
-        precomputed_entity_corpus_tokens_path = os.path.join(self.precomputed_entity_corpus_path, "tokens.pt")
-        precomputed_entity_corpus_embeddings_path = os.path.join(self.precomputed_entity_corpus_path, "embeddings.pt")
+        precomputed_entity_corpus_tokens_path = os.path.join(self.precomputed_entity_corpus_path, "entity_corpus_tokens.pt")
+        precomputed_entity_corpus_embeddings_path = os.path.join(self.precomputed_entity_corpus_path, "entity_corpus_embeddings.pt")
         if precomputed_entity_corpus_embeddings_path and os.path.exists(precomputed_entity_corpus_embeddings_path):
             print("Loading precomputed entity corpus embeddings...")
             self.corpus_embeddings = torch.load(os.path.join(precomputed_entity_corpus_embeddings_path))
@@ -86,7 +86,7 @@ class ELQ(EntityLinking):
             verbose: bool = True,
             overwrite: bool = False,
     ):
-        if os.path.exists(os.path.join(save_path, "tokens.pt")) and not overwrite:
+        if os.path.exists(os.path.join(save_path, "entity_corpus_tokens.pt")) and not overwrite:
             print("Precomputed entity corpus tokens is already exist. Set `overwrite=True` to recompute.")
             return
         
@@ -101,7 +101,7 @@ class ELQ(EntityLinking):
             self.corpus_tokens.append(tokenized_entity)
 
         os.makedirs(save_path, exist_ok=True)
-        torch.save(self.corpus_tokens, os.path.join(save_path, "tokens.pt"))
+        torch.save(self.corpus_tokens, os.path.join(save_path, "entity_corpus_tokens.pt"))
 
     def precompute_entity_corpus(
             self, 
@@ -110,7 +110,7 @@ class ELQ(EntityLinking):
             verbose: bool = True,
             overwrite: bool = False,
     ):
-        if os.path.exists(os.path.join(save_path, "embeddings.pt")) and not overwrite:
+        if os.path.exists(os.path.join(save_path, "entity_corpus_embeddings.pt")) and not overwrite:
             print("Precomputed entity corpus embeddings is already exist. Set `overwrite=True` to recompute.")
             return
         
@@ -133,7 +133,7 @@ class ELQ(EntityLinking):
                 self.corpus_embeddings[i * batch_size: (i + 1) * batch_size] = embeddings
 
         os.makedirs(save_path, exist_ok=True)
-        torch.save(self.corpus_embeddings, os.path.join(save_path, "embeddings.pt"))
+        torch.save(self.corpus_embeddings, os.path.join(save_path, "entity_corpus_embeddings.pt"))
 
     def _input_preprocessing(
             self,
@@ -383,7 +383,7 @@ class ELQ(EntityLinking):
     def from_pretrained(
         cls, 
         model_name_or_path: str,
-        entity_corpus_path: str,
+        entity_corpus_path: Optional[str] = None,
         precomputed_entity_corpus_path: Optional[str] = None,
         max_candidates: int = 30,
         md_threshold: float = 0.5,
@@ -395,12 +395,25 @@ class ELQ(EntityLinking):
             # Get config.json path
             config_path = os.path.join(model_name_or_path, "config.json")
             # Get pytorch_model.bin path
-            path_to_model = os.path.join(model_name_or_path, "pytorch_model.bin")
+            model_path = os.path.join(model_name_or_path, "pytorch_model.bin")
+            # Get entity_corpus.jsonl path
+            if entity_corpus_path is None:
+                entity_corpus_path = os.path.join(model_name_or_path, "entity_corpus.jsonl")
+            # Get entity_corpus_embeddings.pt path
+            if precomputed_entity_corpus_path is None:
+                precomputed_entity_corpus_path = model_name_or_path
         else:
             # Download config.json file
             config_path = hf_hub_download(repo_id=model_name_or_path, filename="config.json")
             # Download pytorch_model.bin file
-            path_to_model = hf_hub_download(repo_id=model_name_or_path, filename="pytorch_model.bin")
+            model_path = hf_hub_download(repo_id=model_name_or_path, filename="pytorch_model.bin")
+            # Download entity corpus
+            if entity_corpus_path is None:
+                entity_corpus_path = hf_hub_download(repo_id=model_name_or_path, filename="entity_corpus.jsonl")
+            # Download precomputed entity corpus
+            if precomputed_entity_corpus_path is None:
+                precomputed_entity_corpus_path = hf_hub_download(repo_id=model_name_or_path, filename="entity_corpus_embeddings.pt")
+                precomputed_entity_corpus_path = os.path.dirname(precomputed_entity_corpus_path)
         
         # Load config.json file
         config = ELQConfig(**json.load(open(config_path)))
@@ -408,7 +421,7 @@ class ELQ(EntityLinking):
             config=config,
             entity_corpus_path=entity_corpus_path,
             precomputed_entity_corpus_path=precomputed_entity_corpus_path,
-            path_to_model=path_to_model,
+            path_to_model=model_path,
             max_candidates=max_candidates,
             md_threshold=md_threshold,
             device=device,
@@ -422,7 +435,7 @@ if __name__ == "__main__":
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
         precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
         max_candidates=30,
-        md_threshold=0.2,
+        md_threshold=0.0,
         use_fp16=False,
     )
     # model.save_pretrained("./data/models/entity_linking/elq_wikipedia")

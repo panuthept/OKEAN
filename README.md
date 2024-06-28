@@ -53,8 +53,6 @@ text = "Which member of Black Eyed Peas appeared in Poseidon?"
 
 el_model = ELQ.from_pretrained(
   model_name_or_path="panuthept/okean-elq-wikipedia",
-  entity_corpus_path="<PATH_TO_CORPUS>",
-  precomputed_entity_corpus_path="<PATH_TO_PRECOMPUTED_CORPUS>",
 )
 
 response = el_model(text)
