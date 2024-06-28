@@ -6,12 +6,12 @@ import numpy as np
 from tqdm import tqdm
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional, Union
-from okean.utilities.general import texts_to_passages
 from okean.data_types.config_types import IndexConfig
 from okean.utilities.readers import load_entity_corpus
 from usearch.index import Index, BatchMatches, Matches, search
 from okean.data_types.basic_types import Passage, Span, Entity
 from okean.modules.entity_linking.baseclass import EntityLinking
+from okean.utilities.general import texts_to_passages, pad_1d_sequence
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 from okean.packages.elq_package.biencoder.biencoder import BiEncoderRanker
 from okean.packages.elq_package.biencoder.data_process import get_candidate_representation
@@ -146,35 +146,30 @@ class ELQ(EntityLinking):
             passages: List[Passage],
             batch_size: int = 8,
     ) -> DataLoader:
-        print(passages)
-
         # Tokenize samples
         max_seq_len = 0
         encoded_samples = []
         offset_mappings = []
         for passage in passages:
             tokenizer_output = self.tokenizer(passage.text, return_offsets_mapping=True)
-            encoded_sample = [101] + tokenizer_output["input_ids"][:self.config.max_context_length - 2] + [102]
+            encoded_sample = [101] + tokenizer_output["input_ids"][1:-1][:self.config.max_context_length - 2] + [102]
+            offset_mapping = [(0, 0)] + tokenizer_output["offset_mapping"][1:-1][:self.config.max_context_length - 2] + [(0, 0)]
             max_seq_len = max(len(encoded_sample), max_seq_len)
             encoded_samples.append(encoded_sample)
-            offset_mappings.append(tokenizer_output["offset_mapping"])
-        print(encoded_samples)
+            offset_mappings.append(offset_mapping)
 
         # Pad samples
-        padded_encoded_samples = []
-        for encoded_sample in encoded_samples:
-            padded_encoded_sample = encoded_sample + [0] * (max_seq_len - len(encoded_sample))
-            padded_encoded_samples.append(padded_encoded_sample)
-        print(padded_encoded_samples)
+        padded_encoded_samples = pad_1d_sequence(encoded_samples, pad_value=0, pad_length=max_seq_len)
+        padded_offset_mappings = pad_1d_sequence(offset_mappings, pad_value=(0, 0), pad_length=max_seq_len)
 
         # Cast to tensor
-        tensor_data_tuple = torch.tensor(padded_encoded_samples)
-        tensor_data = TensorDataset(tensor_data_tuple)
+        tensor_data_tuple = torch.tensor([padded_encoded_samples, padded_offset_mappings])
+        tensor_data = TensorDataset(*tensor_data_tuple)
         sampler = SequentialSampler(tensor_data)
         dataloader = DataLoader(
             tensor_data, sampler=sampler, batch_size=batch_size
         )
-        return dataloader, offset_mappings
+        return dataloader
 
     def __call__(
             self, 
@@ -183,15 +178,18 @@ class ELQ(EntityLinking):
             batch_size: int = 8,
     ) -> List[Passage]:
         passages: List[Passage] = texts_to_passages(texts=texts, passages=passages)
+        output_passages = copy.deepcopy(passages)
+        for passage in output_passages:
+            passage.entities = []
         
         # Prepare input data
-        dataloader, offset_mappings = self._input_preprocessing(passages=passages, batch_size=batch_size)
+        dataloader = self._input_preprocessing(passages=passages, batch_size=batch_size)
 
         # Inference
-        output_passages = copy.deepcopy(passages)
         for batch in dataloader:
             batch = tuple(t.to(self.device) for t in batch)
             context_input = batch[0]
+            offset_mappings = batch[1]
             with torch.no_grad():
                 # Encode input text
                 print(context_input)
@@ -273,8 +271,6 @@ class ELQ(EntityLinking):
                     # final_cand_indices.append(pred_cand_indices[idx])
                     # final_mention_bounds.append(pred_mention_bounds[idx])
                     # span_start =  # Map to original character index
-                    if output_passages[passage_idx].entities is None:
-                        output_passages[passage_idx].entities = []
                     output_passages[passage_idx].entities.append(
                         Span(
                             start=offset_mappings[passage_idx][pred_mention_bounds[idx][0]][0],
@@ -284,7 +280,7 @@ class ELQ(EntityLinking):
                                 Entity(
                                     identifier=pred_cand_indices[idx][cand_idx],
                                     confident=pred_cand_logits[idx][cand_idx],
-                                    metadata=self.corpus_contents[pred_cand_indices[idx][cand_idx]],
+                                    # metadata=self.corpus_contents[pred_cand_indices[idx][cand_idx]],
                                 )
                             for cand_idx in range(self.max_candidates)]
                         )

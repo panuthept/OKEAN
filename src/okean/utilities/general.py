@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any
 from okean.data_types.basic_types import Passage
 
 
@@ -14,3 +14,8 @@ def texts_to_passages(texts: List[str]|str = None, passages: List[Passage]|Passa
     if not isinstance(passages, list):
         passages = [passages]
     return passages
+
+
+def pad_1d_sequence(sequence: List[Any], pad_value: Any, pad_length: int) -> List[Any]:
+    assert len(sequence) <= pad_length, f"Length of `sequence` ({len(sequence)}) must be less than or equal to `pad_length` ({pad_length})."
+    return sequence + [pad_value] * (pad_length - len(sequence))
