@@ -5,6 +5,7 @@ import torch
 from tqdm import tqdm
 from time import time
 from dataclasses import dataclass
+from huggingface_hub import hf_hub_download
 from typing import List, Dict, Any, Tuple, Optional
 from okean.utilities.readers import load_entity_corpus
 from okean.data_types.basic_types import Passage, Span, Entity
@@ -20,7 +21,6 @@ from okean.packages.elq_package.biencoder.data_process import get_candidate_repr
 class ELQConfig:
     lowercase: bool = True
     bert_model: str = "bert-large-uncased"
-    path_to_model: Optional[str] = None
     load_cand_enc_only: bool = False
     mention_aggregation_type: str = "all_avg"
     mention_scoring_method: str = "qa_linear"
@@ -41,6 +41,7 @@ class ELQ(EntityLinking):
             config: ELQConfig,
             entity_corpus_path: str,
             precomputed_entity_corpus_path: Optional[str] = None,
+            path_to_model: Optional[str] = None,
             max_candidates: int = 30,
             device: Optional[str] = None,
             use_fp16: bool = True,
@@ -50,7 +51,9 @@ class ELQ(EntityLinking):
         self.max_candidates = max_candidates
         self.precomputed_entity_corpus_path = precomputed_entity_corpus_path
 
-        self.model = BiEncoderRanker(config.to_dict(), device=device)
+        param = config.to_dict()
+        param["path_to_model"] = path_to_model
+        self.model = BiEncoderRanker(param, device=device)
         self.model.eval()
         if use_fp16: self.model.model.half()
         self.tokenizer = self.model.tokenizer
@@ -371,23 +374,37 @@ class ELQ(EntityLinking):
             json.dump(self.config, f, indent=1)
 
         model_to_save = get_model_obj(self.model.model)
-        torch.save(model_to_save.state_dict(), os.path.join(save_path, "model.bin"))
+        torch.save(model_to_save.state_dict(), os.path.join(save_path, "pytorch_model.bin"))
 
     @classmethod
     def from_pretrained(
         cls, 
-        model_path: str,
+        model_name_or_path: str,
         entity_corpus_path: str,
         precomputed_entity_corpus_path: Optional[str] = None,
         max_candidates: int = 30,
         device: Optional[str] = None,
         use_fp16: bool = True,
     ):
-        config = ELQConfig(**json.load(open(f"{model_path}/config.json")))
+        # Check if model_name_or_path is a local path
+        if os.path.exists(model_name_or_path):
+            # Get config.json path
+            config_path = os.path.join(model_name_or_path, "config.json")
+            # Get pytorch_model.bin path
+            path_to_model = os.path.join(model_name_or_path, "pytorch_model.bin")
+        else:
+            # Download config.json file
+            config_path = hf_hub_download(repo_id=model_name_or_path, filename="config.json")
+            # Download pytorch_model.bin file
+            path_to_model = hf_hub_download(repo_id=model_name_or_path, filename="pytorch_model.bin")
+        
+        # Load config.json file
+        config = ELQConfig(**json.load(open(config_path)))
         return cls(
             config=config,
             entity_corpus_path=entity_corpus_path,
             precomputed_entity_corpus_path=precomputed_entity_corpus_path,
+            path_to_model=path_to_model,
             max_candidates=max_candidates,
             device=device,
             use_fp16=use_fp16,
@@ -395,28 +412,14 @@ class ELQ(EntityLinking):
     
 
 if __name__ == "__main__":
-    # model = ELQ(
-    #     config=ELQConfig(
-    #         bert_model = "bert-large-uncased",
-    #         path_to_model = "./data/models/entity_linking/elq_wikipedia/model.bin",
-    #         max_context_length = 128,
-    #         max_cand_length = 128,
-    #     ),
-    #     max_candidates=30,
-    #     use_fp16=False,
-    #     entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
-    #     precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
-    # )
-    # model.precompute_entity_corpus(save_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus")
-    # model.save_pretrained(save_path="./data/models/entity_linking/elq_wikipedia_2")
-
     model = ELQ.from_pretrained(
-        model_path="./data/models/entity_linking/elq_wikipedia",
+        model_name_or_path="panuthept/okean-elq-wikipedia",
         entity_corpus_path="./data/entity_corpus/elq_entity_corpus.jsonl",
         precomputed_entity_corpus_path="./data/models/entity_linking/elq_wikipedia/elq_entity_corpus",
         max_candidates=30,
         use_fp16=False,
     )
+    # model.save_pretrained("./data/models/entity_linking/elq_wikipedia")
 
     texts = [
         "Barack Obama is the former president of the United States.",
