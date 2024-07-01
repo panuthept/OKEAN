@@ -25,7 +25,7 @@ pip install -e .
 - BGE-M3 ([M3-Embedding: Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation. Chen et al., arXiv 2024](https://arxiv.org/pdf/2402.03216))
 
 ```python
-from okean.modules.retrieval import mE5, AutoRetrievalModel, AVAILABLE_PRETRAINED_IR_MODELS
+from okean.modules.retrieval import AVAILABLE_PRETRAINED_IR_MODELS, AutoRetrievalModel, mE5
 
 print(AVAILABLE_PRETRAINED_IR_MODELS)
 >> {
@@ -40,12 +40,9 @@ print(AVAILABLE_PRETRAINED_IR_MODELS)
   ],
 }
 
-model = mE5.from_pretrained(
+model: mE5 = AutoRetrievalModel.from_pretrained(
   model_name_or_path="intfloat/multilingual-e5-base",
 )
-# model = AutoRetrievalModel.from_pretrained(
-#   model_name_or_path="intfloat/multilingual-e5-base",
-# )
 
 text = "Which member of Black Eyed Peas appeared in Poseidon?"
 response = model(text)
@@ -73,7 +70,7 @@ print(response.passages)
 - KBED ([Improving Entity Disambiguation by Reasoning over a Knowledge Base. Ayoola et al., NAACL 2022](https://aclanthology.org/2022.naacl-main.210.pdf))
 
 ```python
-from okean.modules.entity_linking import ELQ, AutoEntityLinkingModel, AVAILABLE_PRETRAINED_EL_MODELS
+from okean.modules.entity_linking import AVAILABLE_PRETRAINED_EL_MODELS, AutoEntityLinkingModel, ELQ
 
 print(AVAILABLE_PRETRAINED_EL_MODELS)
 >> {
@@ -94,15 +91,12 @@ print(AVAILABLE_PRETRAINED_EL_MODELS)
   ],
 }
 
-el_model = ELQ.from_pretrained(
+model: ELQ = AutoEntityLinkingModel.from_pretrained(
   model_name_or_path="panuthept/okean-elq-wikipedia",
 )
-# el_model = AutoEntityLinkingModel.from_pretrained(
-#   model_name_or_path="panuthept/okean-elq-wikipedia",
-# )
 
 text = "Which member of Black Eyed Peas appeared in Poseidon?"
-response = el_model(text)
+response = model(text)
 print(response.passages)
 >> [
   Passage(
