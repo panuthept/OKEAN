@@ -44,6 +44,8 @@ response = ir_model(text)
 
 ### Entity Linking (EL)
 
+[ELQ - Efficient One-Pass End-to-End Entity Linking for Questions (Li et al., EMNLP 2020)](https://aclanthology.org/2020.emnlp-main.522.pdf)
+
 ```python
 from okean.modules.entity_linking.elq import ELQ
 from okean.modules.entity_linking.genre import GENRE
