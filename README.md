@@ -23,23 +23,25 @@ pip install -e .
 ```python
 from okean.modules.retrieval.elq import mE5
 
-text = "Which member of Black Eyed Peas appeared in Poseidon?"
-
 ir_model = mE5.from_pretrained(
   model_path="<PATH_TO_MODEL>",
   text_corpus_path="<PATH_TO_CORPUS>",
   precomputed_text_corpus_path="<PATH_TO_PRECOMPUTED_CORPUS>",
 )
 
+text = "Which member of Black Eyed Peas appeared in Poseidon?"
 response = ir_model(text)
->> Passage(
-  text="Which member of Black Eyed Peas appeared in Poseidon?",
-  relevant_passages=[
-    Passage(text="...", confident=0.9),
-    Passage(text="...", confident=0.8),
-    Passage(text="...", confident=0.7),
-  ]
-)
+print(response.passages)
+>> [
+  Passage(
+    text="Which member of Black Eyed Peas appeared in Poseidon?",
+    relevant_passages: [
+      Passage(text="...", confident=0.9),
+      Passage(text="...", confident=0.8),
+      Passage(text="...", confident=0.7),
+    ],
+  )
+]
 ```
 
 ### Entity Linking (EL)
@@ -48,23 +50,26 @@ response = ir_model(text)
 
 ```python
 from okean.modules.entity_linking.elq import ELQ
-from okean.modules.entity_linking.genre import GENRE
-from okean.modules.entity_linking.refined import ReFinED
-
-text = "Which member of Black Eyed Peas appeared in Poseidon?"
 
 el_model = ELQ.from_pretrained(
   model_name_or_path="panuthept/okean-elq-wikipedia",
 )
 
+text = "Which member of Black Eyed Peas appeared in Poseidon?"
 response = el_model(text)
 print(response.passages)
 >> [
   Passage(
     text="Which member of Black Eyed Peas appeared in Poseidon?",
-    entities=[
-      Span(start=16, end=31, surface_form="Black Eyed Peas", confident=0.5956, entity=Entity(identifier=110826, confident=1.0, metadata={'id': {'wikipedia': '210453', 'wikidata': 'Q134541'}})),
-      Span(start=44, end=53, surface_form="Poseidon?", confident=0.2635, entity=Entity(identifier=664979, confident=0.9639, metadata={'id': {'wikipedia': '2688309', 'wikidata': 'Q906633'}})),
+    relevant_entities=[
+      Span(
+        start=16, end=31, surface_form="Black Eyed Peas", confident=0.5956,
+        entity=Entity(identifier=110826, confident=1.0, metadata={'id': {'wikipedia': '210453', 'wikidata': 'Q134541'}})
+      ),
+      Span(
+        start=44, end=53, surface_form="Poseidon?", confident=0.2635,
+        entity=Entity(identifier=664979, confident=0.9639, metadata={'id': {'wikipedia': '2688309', 'wikidata': 'Q906633'}})
+      ),
     ]
   )
 ]
@@ -80,14 +85,13 @@ from okean.modules.entity_linking.elq import ELQ
 from okean.modules.retrieval.colbert import ColBERT
 from okean.knowledge_base.wikidata import WikidataKG
 
-text = "Which member of Black Eyed Peas appeared in Poseidon?"
-
 model = ColLUKE(
   el_model=ELQ(),
   ir_model=ColBERT(),
   kg=WikidataKG()
 )
 
+text = "Which member of Black Eyed Peas appeared in Poseidon?"
 response = model(text)
 ```
 
@@ -102,8 +106,6 @@ from okean.modules.generative_llms.t5 import T5
 from okean.knowledge_base.wikidata import WikidataKG
 from okean.modules.entity_linking.refined import ReFinED
 
-text = "Which member of Black Eyed Peas appeared in Poseidon?"
-
 kaping_model = KAPING(
   el_model=ReFinED(),
   ranking_model=MPNet(),
@@ -111,7 +113,9 @@ kaping_model = KAPING(
   kg=WikidataKG()
 )
 
+text = "Which member of Black Eyed Peas appeared in Poseidon?"
 response = kaping_model(text)
+print(response.answer)
 >> Fergie
 ```
 
