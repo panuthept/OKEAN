@@ -114,7 +114,7 @@ class BGEM3(Retriever):
 
         passages = deepcopy(passages)
         for passage, scores, indices in zip(passages, scoress, indicess):
-            passage.relations = [{"relevant_passage": [Passage(text=self.corpus_contents[idx], confident=score) for score, idx in zip(scores, indices)]}]
+            passage.relevant_passages = [{"relevant_passage": [Passage(text=self.corpus_contents[idx], confident=score) for score, idx in zip(scores, indices)]}]
         return passages
 
 

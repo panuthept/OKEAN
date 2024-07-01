@@ -157,10 +157,10 @@ class ELQ(EntityLinking):
             encoded_inputs.append(encoded_input)
             offset_mappings.append(offset_mapping)
 
-            if passage.spans is not None:
+            if passage.relevant_entities is not None:
                 mention_bounds = [] if mention_bounds is None else mention_bounds
                 mention_bound = []
-                for span in passage.spans:
+                for span in passage.relevant_entities:
                     start_token_idx = None
                     end_token_idx = None
                     for token_idx, (token_start, token_end) in enumerate(offset_mapping):
@@ -197,7 +197,7 @@ class ELQ(EntityLinking):
         # Copy input passages
         passages: List[Passage] = copy.deepcopy(passages)
         for passage in passages:
-            passage.spans = []
+            passage.relevant_entities = []
 
         # Cast to tensor
         encoded_inputs, offset_mappings, mention_bounds, mention_masks = processed_inputs
@@ -301,7 +301,7 @@ class ELQ(EntityLinking):
                     span_end = offset_mappings[passage_idx][pred_mention_bounds[idx][1]][1]     # End character index
                     span_text = passages[passage_idx].text[span_start:span_end]
 
-                    passages[passage_idx].spans.append(
+                    passages[passage_idx].relevant_entities.append(
                         Span(
                             start=span_start,
                             end=span_end,
@@ -329,7 +329,7 @@ class ELQ(EntityLinking):
         passages = [
             Passage(
                 text=passage.text,
-                spans=sorted(passage.spans, key=lambda x: x.start),
+                relevant_entities=sorted(passage.relevant_entities, key=lambda x: x.start),
             )
         for passage in passages]
         runtimes["inference"]["post_processing"] = time() - init_time
@@ -458,14 +458,14 @@ if __name__ == "__main__":
     passages = [
         Passage(
             text="Barack Obama is the former president of the United States.", 
-            spans=[
+            relevant_entities=[
                 Span(start=0, end=12, surface_form="Barack Obama"),
                 Span(start=27, end=57, surface_form="president of the United States"),
             ]
         ),
         Passage(
             text="The Eiffel Tower is located in Paris.",
-            spans=[
+            relevant_entities=[
                 Span(start=4, end=16, surface_form="Eiffel Tower"),
                 Span(start=31, end=36, surface_form="Paris"),
             ]

@@ -41,8 +41,8 @@ class Span(BaseDataType):
 class Passage(BaseDataType):
     text: str
     confident: Optional[float|FloatTensor] = None
-    spans: Optional[List[Span]] = None
-    relations: Optional[List[Dict[str, Any]]] = None
+    relevant_entities: Optional[List[Span]] = None
+    relevant_passages: Optional[List['Passage']] = None
 
     def __repr__(self) -> str:
         attributes = ", ".join([f"{k}='{v}'" if isinstance(v, str) else f"{k}={v}" for k, v in self.__dict__.items() if v is not None])
