@@ -22,27 +22,33 @@ pip install -e .
 
 - mE5 ([Multilingual E5 Text Embeddings: A Technical Report. Wang et al., arXiv 2024](https://arxiv.org/pdf/2402.05672))
 
-- BGE-m3 ([M3-Embedding: Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation. Chen et al., arXiv 2024](https://arxiv.org/pdf/2402.03216))
+- BGE-M3 ([M3-Embedding: Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation. Chen et al., arXiv 2024](https://arxiv.org/pdf/2402.03216))
 
 ```python
-from okean.modules.retrieval import mE5, AVAILABLE_PRETRAINED_IR_MODELS
+from okean.modules.retrieval import mE5, AutoRetrievalModel, AVAILABLE_PRETRAINED_IR_MODELS
 
 print(AVAILABLE_PRETRAINED_IR_MODELS)
->> [
-  "intfloat/multilingual-e5-small",
-  "intfloat/multilingual-e5-base",
-  "intfloat/multilingual-e5-large",
-  "intfloat/multilingual-e5-large-instruct",
-  "BAAI/bge-m3",
-  ...
-]
+>> {
+  "mE5": [
+    "intfloat/multilingual-e5-small",
+    "intfloat/multilingual-e5-base",
+    "intfloat/multilingual-e5-large",
+    "intfloat/multilingual-e5-large-instruct",
+  ],
+  "BGEm3": [
+    "BAAI/bge-m3",
+  ],
+}
 
-ir_model = mE5.from_pretrained(
+model = mE5.from_pretrained(
   model_name_or_path="intfloat/multilingual-e5-base",
 )
+# model = AutoRetrievalModel.from_pretrained(
+#   model_name_or_path="intfloat/multilingual-e5-base",
+# )
 
 text = "Which member of Black Eyed Peas appeared in Poseidon?"
-response = ir_model(text)
+response = model(text)
 print(response.passages)
 >> [
   Passage(
@@ -67,22 +73,33 @@ print(response.passages)
 - KBED ([Improving Entity Disambiguation by Reasoning over a Knowledge Base. Ayoola et al., NAACL 2022](https://aclanthology.org/2022.naacl-main.210.pdf))
 
 ```python
-from okean.modules.entity_linking import ELQ, AVAILABLE_PRETRAINED_EL_MODELS
+from okean.modules.entity_linking import ELQ, AutoEntityLinkingModel, AVAILABLE_PRETRAINED_EL_MODELS
 
 print(AVAILABLE_PRETRAINED_EL_MODELS)
->> [
-  "panuthept/okean-elq-wikipedia",
-  "panuthept/okean-genre-wikipedia",
-  "panuthept/okean-genre-aida",
-  "panuthept/okean-refined-wikipedia",
-  "panuthept/okean-refined-aida",
-  "panuthept/okean-kbed-wikipedia"
-  "panuthept/okean-kbed-aida"
-]
+>> {
+  "ELQ": [
+    "panuthept/okean-elq-wikipedia",
+  ],
+  "GENRE": [
+    "panuthept/okean-genre-wikipedia",
+    "panuthept/okean-genre-aida",
+  ],
+  "ReFinED": [
+    "panuthept/okean-refined-wikipedia",
+    "panuthept/okean-refined-aida",
+  ],
+  "KBED": [
+    "panuthept/okean-kbed-wikipedia"
+    "panuthept/okean-kbed-aida"
+  ],
+}
 
 el_model = ELQ.from_pretrained(
   model_name_or_path="panuthept/okean-elq-wikipedia",
 )
+# el_model = AutoEntityLinkingModel.from_pretrained(
+#   model_name_or_path="panuthept/okean-elq-wikipedia",
+# )
 
 text = "Which member of Black Eyed Peas appeared in Poseidon?"
 response = el_model(text)
