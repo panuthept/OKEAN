@@ -18,15 +18,15 @@ pip install -e .
 
 ## Basic Components
 
-### Information Retrieval (IR)
+## Information Retrieval (IR)
+
+[Multilingual E5 Text Embeddings: A Technical Report (Wang et al., arXiv 2024)](https://arxiv.org/pdf/2402.05672)
 
 ```python
 from okean.modules.retrieval.elq import mE5
 
 ir_model = mE5.from_pretrained(
-  model_path="<PATH_TO_MODEL>",
-  text_corpus_path="<PATH_TO_CORPUS>",
-  precomputed_text_corpus_path="<PATH_TO_PRECOMPUTED_CORPUS>",
+  model_name_or_path="intfloat/multilingual-e5-base",
 )
 
 text = "Which member of Black Eyed Peas appeared in Poseidon?"
@@ -44,9 +44,14 @@ print(response.passages)
 ]
 ```
 
-### Entity Linking (EL)
+[M3-Embedding: Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation (Chen et al., arXiv 2024)](https://arxiv.org/pdf/2402.03216)
 
-[ELQ - Efficient One-Pass End-to-End Entity Linking for Questions (Li et al., EMNLP 2020)](https://aclanthology.org/2020.emnlp-main.522.pdf)
+```python
+```
+
+## Entity Linking (EL)
+
+[Efficient One-Pass End-to-End Entity Linking for Questions (Li et al., EMNLP 2020)](https://aclanthology.org/2020.emnlp-main.522.pdf)
 
 ```python
 from okean.modules.entity_linking.elq import ELQ
@@ -75,9 +80,21 @@ print(response.passages)
 ]
 ```
 
+[Autoregressive Entity Retrieval (Cao et al., ICLR 2021)](https://arxiv.org/pdf/2010.00904)
+```python
+```
+
+[ReFinED: An Efficient Zero-shot-capable Approach to End-to-End Entity Linking (Ayoola et al., NAACL 2022)](https://aclanthology.org/2022.naacl-industry.24.pdf)
+```python
+```
+
+[Improving Entity Disambiguation by Reasoning over a Knowledge Base (Ayoola et al., NAACL 2022)](https://aclanthology.org/2022.naacl-main.210.pdf)
+```python
+```
+
 ## Knowledge-Enhanced Information Retrieval (KEIR)
 
-[ColLUKE - Enhancing Late Interaction with Informative Entities for Passage Retrieval (Fang et al., ECIR 2024)](https://keirworkshop.github.io/assets/files/keir_4.pdf)
+[Enhancing Late Interaction with Informative Entities for Passage Retrieval (Fang et al., ECIR 2024)](https://keirworkshop.github.io/assets/files/keir_4.pdf)
 
 ```python
 from okean.modules.keir.colluke import ColLUKE
@@ -97,7 +114,7 @@ response = model(text)
 
 ## Knowledge-Base Question Answering (KBQA)
 
-[KAPING - Knowledge-Augmented Language Model Prompting for Zero-Shot Knowledge Graph Question Answering (Baek et al., NLRSE 2023)](https://aclanthology.org/2023.nlrse-1.7)
+[Knowledge-Augmented Language Model Prompting for Zero-Shot Knowledge Graph Question Answering (Baek et al., NLRSE 2023)](https://aclanthology.org/2023.nlrse-1.7)
 
 ```python
 from okean.modules.kgqa.kaping import KAPING
