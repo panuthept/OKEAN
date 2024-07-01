@@ -20,10 +20,22 @@ pip install -e .
 
 ## Information Retrieval (IR)
 
-[Multilingual E5 Text Embeddings: A Technical Report (Wang et al., arXiv 2024)](https://arxiv.org/pdf/2402.05672)
+- mE5 ([Multilingual E5 Text Embeddings: A Technical Report. Wang et al., arXiv 2024](https://arxiv.org/pdf/2402.05672))
+
+- BGE-m3 ([M3-Embedding: Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation. Chen et al., arXiv 2024](https://arxiv.org/pdf/2402.03216))
 
 ```python
-from okean.modules.retrieval.elq import mE5
+from okean.modules.retrieval import mE5, AVAILABLE_PRETRAINED_IR_MODELS
+
+print(AVAILABLE_PRETRAINED_IR_MODELS)
+>> [
+  "intfloat/multilingual-e5-small",
+  "intfloat/multilingual-e5-base",
+  "intfloat/multilingual-e5-large",
+  "intfloat/multilingual-e5-large-instruct",
+  "BAAI/bge-m3",
+  ...
+]
 
 ir_model = mE5.from_pretrained(
   model_name_or_path="intfloat/multilingual-e5-base",
@@ -44,17 +56,29 @@ print(response.passages)
 ]
 ```
 
-[M3-Embedding: Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation (Chen et al., arXiv 2024)](https://arxiv.org/pdf/2402.03216)
-
-```python
-```
-
 ## Entity Linking (EL)
 
-[Efficient One-Pass End-to-End Entity Linking for Questions (Li et al., EMNLP 2020)](https://aclanthology.org/2020.emnlp-main.522.pdf)
+- ELQ ([Efficient One-Pass End-to-End Entity Linking for Questions. Li et al., EMNLP 2020](https://aclanthology.org/2020.emnlp-main.522.pdf))
+  
+- GENRE ([Autoregressive Entity Retrieval. Cao et al., ICLR 2021](https://arxiv.org/pdf/2010.00904))
+
+- ReFinED ([An Efficient Zero-shot-capable Approach to End-to-End Entity Linking. Ayoola et al., NAACL 2022](https://aclanthology.org/2022.naacl-industry.24.pdf))
+
+- KBED ([Improving Entity Disambiguation by Reasoning over a Knowledge Base. Ayoola et al., NAACL 2022](https://aclanthology.org/2022.naacl-main.210.pdf))
 
 ```python
-from okean.modules.entity_linking.elq import ELQ
+from okean.modules.entity_linking import ELQ, AVAILABLE_PRETRAINED_EL_MODELS
+
+print(AVAILABLE_PRETRAINED_EL_MODELS)
+>> [
+  "panuthept/okean-elq-wikipedia",
+  "panuthept/okean-genre-wikipedia",
+  "panuthept/okean-genre-aida",
+  "panuthept/okean-refined-wikipedia",
+  "panuthept/okean-refined-aida",
+  "panuthept/okean-kbed-wikipedia"
+  "panuthept/okean-kbed-aida"
+]
 
 el_model = ELQ.from_pretrained(
   model_name_or_path="panuthept/okean-elq-wikipedia",
@@ -78,18 +102,6 @@ print(response.passages)
     ]
   )
 ]
-```
-
-[Autoregressive Entity Retrieval (Cao et al., ICLR 2021)](https://arxiv.org/pdf/2010.00904)
-```python
-```
-
-[ReFinED: An Efficient Zero-shot-capable Approach to End-to-End Entity Linking (Ayoola et al., NAACL 2022)](https://aclanthology.org/2022.naacl-industry.24.pdf)
-```python
-```
-
-[Improving Entity Disambiguation by Reasoning over a Knowledge Base (Ayoola et al., NAACL 2022)](https://aclanthology.org/2022.naacl-main.210.pdf)
-```python
 ```
 
 ## Knowledge-Enhanced Information Retrieval (KEIR)
