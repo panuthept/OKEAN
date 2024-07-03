@@ -168,7 +168,8 @@ class DenseRetriever(ModuleInterface):
         else:
             raise ValueError(f"Pooling strategy '{self.config.pooling_method}' not supported.")
         
-        return F.normalize(embeddings, p=2, dim=1) if self.config.normalize_embeddings else embeddings
+        embeddings = F.normalize(embeddings, p=2, dim=1) if self.config.normalize_embeddings else embeddings
+        return embeddings
         
     def _compute_similarity_score(self, query_embeddings, corpus_embeddings):
         if self.config.similarity_distance == "dot":
