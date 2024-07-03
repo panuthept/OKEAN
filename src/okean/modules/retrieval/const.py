@@ -24,12 +24,15 @@ DENSE_RETRIEVAL_CONFIGS = {
         "max_query_length": 512,
         "max_passage_length": 512,
         "pooling_strategy": "average_pooling",
-        "add_prefix": True,
+        "promt": {
+            "query": "query: {text}",
+            "passage": "passage: {text}",
+        }
     },
     "Default": {
         "max_query_length": 512,
         "max_passage_length": 512,
         "pooling_strategy": "average_pooling",
-        "add_prefix": False,
+        "promt": None
     },
 }

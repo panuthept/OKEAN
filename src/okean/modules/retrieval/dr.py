@@ -12,17 +12,21 @@ from huggingface_hub import hf_hub_download
 from okean.data_types.basic_types import Passage
 from okean.utilities.readers import load_corpus_contents
 from transformers import AutoTokenizer, AutoModel, AutoConfig
-from okean.modules.retrieval.const import DENSE_RETRIEVAL_CONFIGS
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 from okean.modules.baseclass import ModuleInterface, ModuleConfig, ModuleResponse
+from okean.modules.retrieval.const import AVAILABLE_PRETRAINED_IR_MODELS, DENSE_RETRIEVAL_CONFIGS
 
+
+@dataclass
+class RetrieverResponse(ModuleResponse):
+    pass
 
 @dataclass
 class DenseRetrieverConfig(ModuleConfig):
     max_query_length: int = 512
     max_passage_length: int = 512
     pooling_strategy: str = "average_pooling"
-    add_prefix: bool = False
+    promt: Optional[Dict[str, str]] = None
 
 
 class DenseRetriever(ModuleInterface):
@@ -80,7 +84,11 @@ class DenseRetriever(ModuleInterface):
 
     def _precopute_corpus_tokens(self) -> Dict[str, torch.Tensor]:
         tokens = self.tokenizer(
-            [f"passage: {data['text']}" if self.config.add_prefix else data['text'] for data in self.corpus_contents], 
+            [
+                self.config.promt["passage"].replace("{text}", data['text'])
+                if self.config.promt else data['text'] 
+                for data in self.corpus_contents
+            ], 
             max_length=self.config.max_passage_length, 
             padding=True, truncation=True, return_tensors="pt",
         )
@@ -141,7 +149,11 @@ class DenseRetriever(ModuleInterface):
             self,
             passages: List[Passage],
     ) -> Dict[str, torch.Tensor]:
-        queries = [f"query: {passage.text}" if self.config.add_prefix else passage.text for passage in passages]
+        queries = [
+            self.config.promt["query"].replace("{text}", passage.text) 
+            if self.config.promt else passage.text
+            for passage in passages
+        ]
         tokenized_queries = self.tokenizer(queries, max_length=self.config.max_query_length, padding=True, truncation=True, return_tensors="pt")
         return tokenized_queries
     
@@ -160,7 +172,7 @@ class DenseRetriever(ModuleInterface):
             processed_inputs: Dict[str, torch.Tensor],
             batch_size: int = 8,
             top_k: int = 10,
-    ) -> ModuleResponse:
+    ) -> RetrieverResponse:
         # Create copy of passages
         passages: List[Passage] = copy.deepcopy(passages)
         for passage in passages:
@@ -199,7 +211,7 @@ class DenseRetriever(ModuleInterface):
                         ) for score, corpus_idx in zip(scores, indices)
                     ]
                 runtimes["update_passages"] = time() - init_time
-        return ModuleResponse(passages=passages, runtimes=runtimes)
+        return RetrieverResponse(passages=passages, runtimes=runtimes)
 
     def save_pretrained(self, path: str):
         # Create directory
@@ -221,16 +233,16 @@ class DenseRetriever(ModuleInterface):
     ) -> 'DenseRetriever':
         if os.path.exists(model_name_or_path):
             # Load config
-            with open(os.path.join(model_name_or_path, "config.json"), "r") as f:
+            with open(os.path.join(model_name_or_path, "config.okean.json"), "r") as f:
                 config = DenseRetrieverConfig(**json.load(f))
             # Load models
             path_to_models = os.path.join(model_name_or_path, "pytorch_model.bin")
         else:
-            if model_name_or_path in DENSE_RETRIEVAL_CONFIGS["E5"]:
+            if model_name_or_path in AVAILABLE_PRETRAINED_IR_MODELS["E5"]:
                 config_dict = DENSE_RETRIEVAL_CONFIGS["E5"]
             else:
                 config_dict = DENSE_RETRIEVAL_CONFIGS["Default"]
-                print(f"Unknown pretrained model. use default config: {config_dict}")
+            print(f"Use default config: {config_dict}")
             # Create config
             config = DenseRetrieverConfig(
                 pretrained_model_name=model_name_or_path, **config_dict,
@@ -251,7 +263,7 @@ class DenseRetriever(ModuleInterface):
 
 if __name__ == "__main__":
     model = DenseRetriever.from_pretrained(
-        model_name_or_path="sentence-transformers/all-mpnet-base-v2",
+        model_name_or_path="intfloat/multilingual-e5-base",
         text_corpus_path="./data/text_corpus/test.jsonl",
         precomputed_text_corpus_path="./data/precomputed_text_corpus/test",
     )
