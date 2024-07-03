@@ -27,14 +27,16 @@ DENSE_RETRIEVAL_CONFIGS = {
             "query": "query: {text}",
             "passage": "passage: {text}",
         },
-        "pooling_strategy": "average_pooling",
+        "pooling_method": "average",
+        "normalize_embeddings": True,
         "similarity_distance": "dot",
     },
     "Default": {
         "max_query_length": 512,
         "max_passage_length": 512,
         "promt": None,
-        "pooling_strategy": "average_pooling",
+        "pooling_method": "average",
+        "normalize_embeddings": True,
         "similarity_distance": "dot",
     },
 }

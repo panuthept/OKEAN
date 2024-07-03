@@ -26,7 +26,8 @@ class DenseRetrieverConfig(ModuleConfig):
     max_query_length: int = 512
     max_passage_length: int = 512
     promt: Optional[Dict[str, str]] = None
-    pooling_strategy: str = "average_pooling"
+    pooling_method: str = "average"
+    normalize_embeddings: bool = True
     similarity_distance: str = "dot"
 
 
@@ -159,12 +160,15 @@ class DenseRetriever(ModuleInterface):
         return tokenized_queries
     
     def _pooling(self, last_hidden_states: Tensor, attention_mask: Tensor) -> Tensor:
-        if self.config.pooling_strategy == "average_pooling":
+        if self.config.pooling_method == "average":
             last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
             embeddings = last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
-            return F.normalize(embeddings, p=2, dim=1)
+        elif self.config.pooling_method == "cls":
+            pass
         else:
-            raise ValueError(f"Pooling strategy '{self.config.pooling_strategy}' not supported.")
+            raise ValueError(f"Pooling strategy '{self.config.pooling_method}' not supported.")
+        
+        return F.normalize(embeddings, p=2, dim=1) if self.config.normalize_embeddings else embeddings
         
     def _compute_similarity_score(self, query_embeddings, corpus_embeddings):
         if self.config.similarity_distance == "dot":
