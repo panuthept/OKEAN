@@ -23,16 +23,18 @@ DENSE_RETRIEVAL_CONFIGS = {
     "E5": {
         "max_query_length": 512,
         "max_passage_length": 512,
-        "pooling_strategy": "average_pooling",
         "promt": {
             "query": "query: {text}",
             "passage": "passage: {text}",
-        }
+        },
+        "pooling_strategy": "average_pooling",
+        "similarity_distance": "dot",
     },
     "Default": {
         "max_query_length": 512,
         "max_passage_length": 512,
+        "promt": None,
         "pooling_strategy": "average_pooling",
-        "promt": None
+        "similarity_distance": "dot",
     },
 }

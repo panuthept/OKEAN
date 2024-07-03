@@ -25,8 +25,9 @@ class RetrieverResponse(ModuleResponse):
 class DenseRetrieverConfig(ModuleConfig):
     max_query_length: int = 512
     max_passage_length: int = 512
-    pooling_strategy: str = "average_pooling"
     promt: Optional[Dict[str, str]] = None
+    pooling_strategy: str = "average_pooling"
+    similarity_distance: str = "dot"
 
 
 class DenseRetriever(ModuleInterface):
@@ -164,6 +165,17 @@ class DenseRetriever(ModuleInterface):
             return F.normalize(embeddings, p=2, dim=1)
         else:
             raise ValueError(f"Pooling strategy '{self.config.pooling_strategy}' not supported.")
+        
+    def _compute_similarity_score(self, query_embeddings, corpus_embeddings):
+        if self.config.similarity_distance == "dot":
+            logits = torch.matmul(query_embeddings, corpus_embeddings.t())
+        elif self.config.similarity_distance == "cos":
+            logits = F.cosine_similarity(query_embeddings, corpus_embeddings, dim=-1)
+        else:
+            raise ValueError(f"Unknown similarity distance: {self.config.similarity_distance}.")
+        
+        scores = F.softmax(logits, dim=-1)
+        return scores
 
     def _inference(
             self,
@@ -195,10 +207,9 @@ class DenseRetriever(ModuleInterface):
                 # Retrieve relevant passages
                 init_time = time()
                 # (queries_num, passages_num)
-                pred_logits = torch.matmul(query_embeddings, self.corpus_embeddings.t())
-                pred_scores = F.softmax(pred_logits, dim=-1)
+                similarity_scores = self._compute_similarity_score(query_embeddings, self.corpus_embeddings)
                 # (queries_num, top_k)
-                top_k_scores, top_k_indices = torch.topk(pred_scores, k=min(top_k, len(self.corpus_contents)), dim=-1, sorted=True)
+                top_k_scores, top_k_indices = torch.topk(similarity_scores, k=min(top_k, len(self.corpus_contents)), dim=-1, sorted=True)
                 runtimes["inference_searching"] = time() - init_time
 
                 # Update passages
