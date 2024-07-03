@@ -18,7 +18,7 @@ from okean.modules.retrieval.const import AVAILABLE_PRETRAINED_IR_MODELS, DENSE_
 
 
 @dataclass
-class RetrieverResponse(ModuleResponse):
+class DenseRetrieverResponse(ModuleResponse):
     pass
 
 @dataclass
@@ -184,7 +184,7 @@ class DenseRetriever(ModuleInterface):
             processed_inputs: Dict[str, torch.Tensor],
             batch_size: int = 8,
             top_k: int = 10,
-    ) -> RetrieverResponse:
+    ) -> DenseRetrieverResponse:
         # Create copy of passages
         passages: List[Passage] = copy.deepcopy(passages)
         for passage in passages:
@@ -222,7 +222,7 @@ class DenseRetriever(ModuleInterface):
                         ) for score, corpus_idx in zip(scores, indices)
                     ]
                 runtimes["update_passages"] = time() - init_time
-        return RetrieverResponse(passages=passages, runtimes=runtimes)
+        return DenseRetrieverResponse(passages=passages, runtimes=runtimes)
 
     def save_pretrained(self, path: str):
         # Create directory
