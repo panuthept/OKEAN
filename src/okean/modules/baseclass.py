@@ -1,3 +1,4 @@
+import torch
 from time import time
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
@@ -8,7 +9,7 @@ from okean.utilities.general import texts_to_passages
 
 @dataclass
 class ModuleConfig:
-    plm_name: str
+    pretrained_model_name: str
 
     def to_dict(self):
         return self.__dict__
@@ -25,10 +26,17 @@ class ModuleInterface(ABC):
     def __init__(
             self, 
             config: ModuleConfig,
-            path_to_model: Optional[str] = None,
+            path_to_models: Optional[Dict[str, str]] = None,
             device: Optional[str] = None,
             use_fp16: bool = False,
     ):
+        self.config = config
+        self.path_to_models = path_to_models
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else torch.device(device)
+        self.use_fp16 = use_fp16
+
+    @abstractmethod
+    def _build_models(self):
         raise NotImplementedError
 
     @abstractmethod
