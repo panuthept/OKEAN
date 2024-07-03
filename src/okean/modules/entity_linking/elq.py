@@ -39,7 +39,7 @@ class ELQ(EntityLinking):
     def __init__(
             self, 
             config: ELQConfig,
-            entity_corpus_path: str,
+            entity_corpus_path: Optional[str] = None,
             precomputed_entity_corpus_path: Optional[str] = None,
             path_to_model: Optional[str] = None,
             max_candidates: int = 30,
@@ -60,12 +60,21 @@ class ELQ(EntityLinking):
         if use_fp16: self.model.model.half()
         self.tokenizer = self.model.tokenizer
 
+        self.entity_corpus_path = entity_corpus_path
         self.precomputed_entity_corpus_path = precomputed_entity_corpus_path
+
+        self.corpus_contents = None
+        self.corpus_tokens = None
+        self.corpus_embeddings = None
+        if entity_corpus_path is not None:
+            self.corpus_contents = load_entity_corpus(entity_corpus_path)       
+            self._load_precomputed_entity_corpus()
+
+    def add_entity_corpus(self, entity_corpus_path: str):
+        self.entity_corpus_path = entity_corpus_path
         self.corpus_contents = load_entity_corpus(entity_corpus_path)
         self.corpus_tokens = None
         self.corpus_embeddings = None
-
-        self._load_precomputed_entity_corpus()
 
     def _load_precomputed_entity_corpus(self):
         if self.precomputed_entity_corpus_path is None:

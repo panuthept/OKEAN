@@ -43,6 +43,7 @@ class ModuleInterface(ABC):
     def _input_preprocessing(
             self,
             passages: List[Passage],
+            batch_size: int = 8,
             **kwargs,
     ) -> Any:
         raise NotImplementedError
@@ -73,7 +74,11 @@ class ModuleInterface(ABC):
         # Prepare input data
         init_time = time()
         passages: List[Passage] = texts_to_passages(texts=texts, passages=passages)
-        processed_inputs = self._input_preprocessing(passages=passages, **kwargs)
+        processed_inputs = self._input_preprocessing(
+            passages=passages, 
+            batch_size=batch_size,
+            **kwargs
+        )
         runtimes["input_preprocessing"] = time() - init_time
 
         # Inference

@@ -18,3 +18,12 @@ def load_entity_corpus(load_path: str) -> List[Dict[str, Any]]:
                 entity = json.loads(line)
                 corpus_contents.append(entity)
         return corpus_contents
+
+
+def load_corpus_contents(load_path: str) -> List[Dict[str, Any]]:
+    corpus_contents = []
+    with open(load_path, "r") as f:
+        for line in f:
+            data = json.loads(line)
+            corpus_contents.append(data)
+    return corpus_contents
